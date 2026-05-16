@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: Questoria-craft
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node dist/index.js
+    autoDeploy: true
+    envVars:
+      - key: 8732816227:AAE1WknAiPv_S5sI6JfjZf-hLyt4pb9gFYQ
+        sync: false
