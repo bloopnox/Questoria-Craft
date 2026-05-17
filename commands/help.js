@@ -3,7 +3,7 @@ module.exports = (bot) => {
     const chatId = msg.chat.id; 
     
     // Using backticks () allows you to write multi-line text!
-    const helpMessage = Commands: 
+    const helpMessage = `Commands: 
 /start - Start game 
 /help - Show commands 
 /summon - Summon a character 
