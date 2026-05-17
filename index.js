@@ -32,7 +32,8 @@ bot.setMyCommands([
   { command: "buy", description: "shop weapons" },
   { command: "equip", description: "equip a weapon" },
   { command: "weapon", description: "equip a weapon" },
-  { command: "addchar", description: "add the charcter" }
+  { command: "addchar", description: "add the charcter" },
+  { command: "char", description: "to view the character" }
 ]).then(() => {
   console.log("📜 Telegram menu button updated!");
 }).catch((err) => {
