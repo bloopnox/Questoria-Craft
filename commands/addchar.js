@@ -1,52 +1,42 @@
-const fs = require("fs");
+const players = require("../data/player");
+const normalCards = require("../asset/assets");
+const mythicalCards = require("../asset/mythical");
 
-let temp = {};
+const allCards = [...normalCards, ...mythicalCards];
+
+const ADMIN_ID = "2086993762";
 
 module.exports = (bot) => {
+  bot.onText(/^\/addchar (\d+) (.+)$/, (msg, match) => {
+    const senderId = msg.from.id.toString();
+    const targetId = match[1];
+    const cardId = match[2].trim().toLowerCase();
 
-  // 1️⃣ name lo
-  bot.onText(/\/addchar (.+)/, (msg, match) => {
-    temp[msg.chat.id] = match[1].toLowerCase();
-    bot.sendMessage(msg.chat.id, "📸 Ab image bhejo");
-  });
-
-  // 2️⃣ image lo
-  bot.on("photo", async (msg) => {
-    const chatId = msg.chat.id;
-
-    if (!temp[chatId]) return;
-
-    const name = temp[chatId];
-
-    const fileId = msg.photo[msg.photo.length - 1].file_id;
-    const fileLink = await bot.getFileLink(fileId);
-
-    // ⚡ read old data
-    let data = {};
-    try {
-      data = require("../asset/assets");
-      delete require.cache[require.resolve("../asset/assets")];
-      data = require("../asset/assets");
-    } catch (e) {
-      data = {};
+    if (senderId !== ADMIN_ID) {
+      return bot.sendMessage(msg.chat.id, "❌ Admin only command.");
     }
 
-    // ⚡ save character
-    data[name] = {
-      name: name,
-      img: fileLink,
-      rarity: "SSR"
-    };
+    if (!players[targetId]) {
+      return bot.sendMessage(msg.chat.id, "❌ User not found.");
+    }
 
-    // ⚡ write file
-    fs.writeFileSync(
-      "./asset/assets.js",
-      "module.exports = " + JSON.stringify(data, null, 2)
+    const card = allCards.find(
+      (c) => c.id.toLowerCase() === cardId
     );
 
-    bot.sendMessage(msg.chat.id, "✅ Character saved!");
+    if (!card) {
+      return bot.sendMessage(msg.chat.id, "❌ Invalid card id.");
+    }
 
-    delete temp[chatId];
+    if (!players[targetId].cards) {
+      players[targetId].cards = [];
+    }
+
+    players[targetId].cards.push(card);
+
+    bot.sendMessage(
+      msg.chat.id,
+      `✅ Added ${card.name} to ${targetId}`
+    );
   });
-
 };
