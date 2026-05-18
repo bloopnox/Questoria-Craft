@@ -2,44 +2,23 @@ const players = require("../data/players");
 const mythical = require("../asset/mythical");
 
 module.exports = (bot) => {
-  bot.onText(/^\/mythicalshop$/, async (msg) => {
+  bot.onText(/^\/mythicalshop$/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
     if (!players[userId]) {
-      return bot.sendMessage(chatId, "❌ Use /start first.");
+      return bot.sendMessage(chatId, "❌ Use /start first");
     }
 
-    const crystals = players[userId].mythicalCrystals || 0;
+    let text = "💎 MYTHICAL SHOP 💎\n\n";
+    text += `Crystals: ${players[userId].mythicalCrystals || 0}\n\n`;
 
-    await bot.sendMessage(
-      chatId,
-      `💎 MYTHICAL SHOP 💎\n\nYour Crystals: ${crystals}`
-    );
+    mythical.forEach((card) => {
+      text += `${card.name}\n`;
+      text += `ID: ${card.id}\n`;
+      text += `Cost: ${card.cost}\n\n`;
+    });
 
-    for (const card of mythical) {
-      await bot.sendPhoto(chatId, card.image, {
-        caption:
-          `🎴 ${card.name}\n` +
-          `🆔 ${card.id}\n` +
-          `⚔️ Power: ${card.power}\n` +
-          `💠 Cost: ${card.cost} Crystals`,
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🖼 View Card Image",
-                url: card.image
-              }
-            ]
-          ]
-        }
-      });
-    }
-
-    bot.sendMessage(
-      chatId,
-      "Redeem using:\n/redeem card_id"
-    );
+    bot.sendMessage(chatId, text);
   });
 };
