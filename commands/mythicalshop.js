@@ -1,4 +1,4 @@
-const players = require("../data/player");
+const players = require("../data/players");
 const mythical = require("../asset/mythical");
 
 module.exports = (bot) => {
