@@ -8,46 +8,29 @@ module.exports = (bot) => {
     const cardId = match[1].trim();
 
     if (!players[userId]) {
-      return bot.sendMessage(chatId, "❌ Use /start first.");
+      return bot.sendMessage(chatId, "❌ Use /start first");
     }
 
     const player = players[userId];
-    const card = mythical.find((c) => c.id === cardId);
+    const card = mythical.find(card => card.id === cardId);
 
     if (!card) {
-      return bot.sendMessage(chatId, "❌ Invalid Card ID.");
+      return bot.sendMessage(chatId, "❌ Invalid card ID");
     }
 
-    if (!player.mythicalCrystals) player.mythicalCrystals = 0;
+    if (!player.mythicalCrystals) player.mythicalCrystals = 10;
     if (!player.cards) player.cards = [];
 
-    const alreadyOwned = player.cards.some(
-      (c) => c.id === card.id
-    );
-
-    if (alreadyOwned) {
-      return bot.sendMessage(
-        chatId,
-        "⚠️ You already own this card."
-      );
-    }
-
     if (player.mythicalCrystals < card.cost) {
-      return bot.sendMessage(
-        chatId,
-        `❌ Not enough crystals.\nNeed: ${card.cost}\nYou Have: ${player.mythicalCrystals}`
-      );
+      return bot.sendMessage(chatId, "❌ Not enough crystals");
     }
 
     player.mythicalCrystals -= card.cost;
     player.cards.push(card);
 
-    bot.sendPhoto(chatId, card.image, {
-      caption:
-        `🎉 MYTHICAL REDEEMED 🎉\n\n` +
-        `🎴 ${card.name}\n` +
-        `⚔️ Power: ${card.power}\n` +
-        `💠 Remaining Crystals: ${player.mythicalCrystals}`
-    });
+    bot.sendMessage(
+      chatId,
+      `✅ Redeemed ${card.name}\nRemaining Crystals: ${player.mythicalCrystals}`
+    );
   });
 };
