@@ -2,7 +2,7 @@ const players = require("../data/players");
 const mythical = require("../asset/mythical");
 
 module.exports = (bot) => {
-  bot.onText(/^\/mythicalshop$/, async (msg) => {
+  bot.onText(/^\/mythicalshop$/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
@@ -12,34 +12,46 @@ module.exports = (bot) => {
 
     const crystals = players[userId].mythicalCrystals || 0;
 
-    await bot.sendMessage(
-      chatId,
-      `💎 MYTHICAL SHOP 💎\n\nYour Crystals: ${crystals}`
-    );
+    let text = `💎 <b>MYTHICAL SHOP</b> 💎\n`;
+    text += `━━━━━━━━━━━━━━\n`;
+    text += `💠 Crystals: <b>${crystals}</b>\n\n`;
 
-    for (const card of mythical) {
-      await bot.sendPhoto(chatId, card.image, {
+    mythical.forEach((card, index) => {
+      text += `<b>${index + 1}. ${card.name}</b>\n`;
+      text += `⚔️ Power: ${card.power}\n`;
+      text += `💠 Cost: ${card.cost}\n`;
+      text += `🆔 ${card.id}\n\n`;
+    });
+
+    bot.sendMessage(chatId, text, {
+      parse_mode: "HTML",
+      reply_markup: {
+        inline_keyboard: mythical.map((card) => [
+          {
+            text: `🖼 ${card.name}`,
+            callback_data: `view_${card.id}`
+          }
+        ])
+      }
+    });
+  });
+
+  bot.on("callback_query", (query) => {
+    const chatId = query.message.chat.id;
+    const data = query.data;
+
+    if (data.startsWith("view_")) {
+      const cardId = data.replace("view_", "");
+
+      const card = mythical.find((c) => c.id === cardId);
+      if (!card) return;
+
+      bot.sendPhoto(chatId, card.image, {
         caption:
           `🎴 ${card.name}\n` +
-          `🆔 ${card.id}\n` +
           `⚔️ Power: ${card.power}\n` +
-          `💠 Cost: ${card.cost} Crystals`,
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🖼 View Card Image",
-                url: card.image
-              }
-            ]
-          ]
-        }
+          `💠 Cost: ${card.cost}`
       });
     }
-
-    bot.sendMessage(
-      chatId,
-      "Redeem using:\n/redeem card_id"
-    );
   });
 };
