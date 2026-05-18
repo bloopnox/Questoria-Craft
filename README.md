@@ -2,7 +2,7 @@
 <h2 align="center">🤖 Bot Preview</h2>
 
 <p align="center">
-  <img src="https://kommodo.ai/i/0oSHdiL6q972ui7Yd53M" width="300">
+  <img src="https://joxtwsuwxucrxydskpuk.supabase.co/storage/v1/object/public/images/telegram-1779106551178-b55530f5.jpg" width="300">
 </p>
 
 <p align="center">
