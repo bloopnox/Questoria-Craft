@@ -1,4 +1,4 @@
-const players = require("../data/player");
+const players = require("../data/players");
 const normalCards = require("../asset/assets");
 const mythicalCards = require("../asset/mythical");
 
