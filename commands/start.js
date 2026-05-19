@@ -5,23 +5,24 @@ module.exports = (bot) => {
   // =========================
   // IMAGES
   // =========================
-const START_IMG =
-  "https://i.pinimg.com/736x/e1/97/3e/e1973e8421e69bc09f731b60f5102d97.jpg";
+  const START_IMG =
+    "https://i.pinimg.com/736x/e1/97/3e/e1973e8421e69bc09f731b60f5102d97.jpg";
 
-const TANJIRO_IMG =
-  "https://i.pinimg.com/736x/ab/26/81/ab26817caf5dbd8bd82f698f517649b7.jpg";
+  const TANJIRO_IMG =
+    "https://i.pinimg.com/736x/ab/26/81/ab26817caf5dbd8bd82f698f517649b7.jpg";
 
-const NEZUKO_IMG =
-  "https://i.pinimg.com/736x/6c/02/c9/6c02c93d3991470183f6c169d1adc64e.jpg";
+  const NEZUKO_IMG =
+    "https://i.pinimg.com/736x/6c/02/c9/6c02c93d3991470183f6c169d1adc64e.jpg";
 
   // =========================
-  // START
+  // START COMMAND
   // =========================
   bot.onText(/\/start/, async (msg) => {
 
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
+    // CREATE PLAYER
     if (!players[userId]) {
       players[userId] = {
         coins: 1000,
@@ -32,6 +33,27 @@ const NEZUKO_IMG =
       };
     }
 
+    // =========================
+    // ALREADY SELECTED
+    // =========================
+    if (players[userId].character) {
+
+      return bot.sendMessage(
+        chatId,
+        `
+⚠️ You Already Selected A Character!
+
+👤 Current Character:
+${players[userId].character}
+
+🎯 Use /hunt To Start Hunting Demons
+`
+      );
+    }
+
+    // =========================
+    // START MENU
+    // =========================
     await bot.sendPhoto(chatId, START_IMG, {
       caption: `
 ⚔️ WELCOME TO DEMON SLAYER BOT ⚔️
@@ -59,7 +81,7 @@ Choose Your Beginning 👇
   });
 
   // =========================
-  // BUTTONS
+  // BUTTON HANDLER
   // =========================
   bot.on("callback_query", async (query) => {
 
@@ -67,7 +89,31 @@ Choose Your Beginning 👇
     const userId = query.from.id.toString();
     const data = query.data;
 
-    // TANJIRO
+    // CREATE PLAYER IF NOT EXISTS
+    if (!players[userId]) {
+      players[userId] = {
+        coins: 1000,
+        gems: 0,
+        mythicalCrystals: 5,
+        cards: [],
+        character: null
+      };
+    }
+
+    // =========================
+    // BLOCK SECOND SELECTION
+    // =========================
+    if (players[userId].character) {
+
+      return bot.answerCallbackQuery(query.id, {
+        text: "❌ Character Already Selected!",
+        show_alert: true
+      });
+    }
+
+    // =========================
+    // TANJIRO SELECT
+    // =========================
     if (data === "tanjiro") {
 
       players[userId].character = "Tanjiro";
@@ -80,6 +126,11 @@ Choose Your Beginning 👇
 🪙 Coins: 1000
 💎 Gems: 0
 🔮 Crystals: 5
+
+✅ Character Locked Successfully!
+
+🎯 New Command Unlocked:
+/hunt
 `,
         reply_markup: {
           inline_keyboard: [
@@ -96,7 +147,9 @@ Choose Your Beginning 👇
       return bot.answerCallbackQuery(query.id);
     }
 
-    // NEZUKO
+    // =========================
+    // NEZUKO SELECT
+    // =========================
     if (data === "nezuko") {
 
       players[userId].character = "Nezuko";
@@ -109,6 +162,11 @@ Choose Your Beginning 👇
 🪙 Coins: 1000
 💎 Gems: 0
 🔮 Crystals: 5
+
+✅ Character Locked Successfully!
+
+🎯 New Command Unlocked:
+/hunt
 `,
         reply_markup: {
           inline_keyboard: [
