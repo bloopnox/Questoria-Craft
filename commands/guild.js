@@ -1,5 +1,5 @@
 const players = require("../data/players");
-const guilds = require("../data/guilds");
+const guilds = require("../data/guild");
 
 module.exports = (bot) => {
 
