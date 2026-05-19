@@ -1,15 +1,32 @@
+const guilds = require("../data/guild");
 const players = require("../data/players");
-const guilds = require("../data/guilds");
 
 module.exports = (bot) => {
 
   // =========================
-  // FIND GUILD
+  // SAFE PLAYER INIT
+  // =========================
+  const getPlayer = (userId) => {
+    if (!players[userId]) {
+      players[userId] = {
+        coins: 1000,
+        gems: 0,
+        mythicalCrystals: 5,
+        level: 1,
+        xp: 0
+      };
+      players.save();
+    }
+    return players[userId];
+  };
+
+  // =========================
+  // FIND USER GUILD
   // =========================
   const getUserGuild = (userId) => {
-    for (let g in guilds) {
-      if (guilds[g].members.includes(userId)) {
-        return guilds[g];
+    for (const id in guilds) {
+      if (guilds[id].members.includes(userId)) {
+        return guilds[id];
       }
     }
     return null;
@@ -19,141 +36,108 @@ module.exports = (bot) => {
   // CREATE GUILD
   // =========================
   bot.onText(/\/createguild (.+)/, (msg, match) => {
-
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
-    const name = match[1];
+    const guildName = match[1];
 
-    const p = players[userId];
-    if (!p) return bot.sendMessage(chatId, "❌ Profile not found");
+    const player = getPlayer(userId);
 
     if (getUserGuild(userId)) {
-      return bot.sendMessage(chatId, "❌ Already in a guild");
+      return bot.sendMessage(chatId, "❌ You are already in a guild.");
     }
 
-    if (p.coins < 100000 || p.mythicalCrystals < 5) {
-      return bot.sendMessage(chatId, "❌ Need 100k coins + 5 crystals");
+    if (player.coins < 100000 || player.mythicalCrystals < 5) {
+      return bot.sendMessage(
+        chatId,
+        "❌ Need 100000 coins + 5 mythical crystals"
+      );
     }
 
-    p.coins -= 100000;
-    p.mythicalCrystals -= 5;
+    player.coins -= 100000;
+    player.mythicalCrystals -= 5;
 
-    const guildId = "g_" + Date.now();
-
-    guilds[guildId] = {
-      name: name,
+    guilds[guildName] = {
+      name: guildName,
       leader: userId,
       members: [userId],
-
-      image: "https://i.pinimg.com/736x/ba/cf/fd/bacffdb010bfded61e45378057724c71.jpg",
-
+      maxMembers: 15,
       vault: {
         coins: 0,
         mythicalTokens: 0
       },
-
       contributions: {}
     };
 
-    bot.sendMessage(chatId, `🏰 Guild Created: ${name}`);
+    players.save();
+    guilds.save();
+
+    bot.sendMessage(chatId, `🏰 Guild created: ${guildName}`);
   });
 
   // =========================
   // JOIN GUILD
   // =========================
   bot.onText(/\/joinguild (.+)/, (msg, match) => {
-
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
-    const name = match[1].toLowerCase();
+    const guildName = match[1];
 
     if (getUserGuild(userId)) {
-      return bot.sendMessage(chatId, "❌ Already in guild");
+      return bot.sendMessage(chatId, "❌ Already in a guild.");
     }
 
-    for (let g in guilds) {
-      if (guilds[g].name.toLowerCase() === name) {
+    const guild = guilds[guildName];
 
-        guilds[g].members.push(userId);
-
-        return bot.sendMessage(chatId, `✅ Joined ${guilds[g].name}`);
-      }
+    if (!guild) {
+      return bot.sendMessage(chatId, "❌ Guild not found.");
     }
 
-    bot.sendMessage(chatId, "❌ Guild not found");
+    if (guild.members.length >= guild.maxMembers) {
+      return bot.sendMessage(chatId, "❌ Guild is full.");
+    }
+
+    guild.members.push(userId);
+    guilds.save();
+
+    bot.sendMessage(chatId, `✅ Joined guild ${guildName}`);
   });
 
   // =========================
-  // MY GUILD (WITH URL + BUTTONS)
+  // MY GUILD
   // =========================
   bot.onText(/\/myguild/, (msg) => {
-
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
     const guild = getUserGuild(userId);
 
-    if (!guild) return bot.sendMessage(chatId, "❌ No guild");
+    if (!guild) {
+      return bot.sendMessage(chatId, "❌ You are not in a guild.");
+    }
 
-    const isLeader = guild.leader === userId;
-
-    const c = guild.contributions[userId] || {
-      coins: 0,
-      mythicalTokens: 0
-    };
-
-    const caption = `
-🏰 *${guild.name}*
+    bot.sendPhoto(
+      chatId,
+      "https://i.pinimg.com/736x/42/cd/c7/42cdc74b49272d2109180b207d9d5892.jpg",
+      {
+        caption: `🏰 *${guild.name}*
 
 👑 Leader: ${guild.leader}
-👥 Members: ${guild.members.length}
-⭐ Role: ${isLeader ? "Leader" : "Member"}
+👥 Members: ${guild.members.length}/${guild.maxMembers}
 
-💰 Vault:
-- Coins: ${guild.vault.coins}
-- Tokens: ${guild.vault.mythicalTokens}
-
-📜 Your Contribution:
-- Coins: ${c.coins}
-- Tokens: ${c.mythicalTokens}
-
-🌐 More Info: https://example.com/guild-system
-    `;
-
-    bot.sendPhoto(chatId, guild.image, {
-      caption: caption,
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "💰 Vault", callback_data: "guild_vault" },
-            { text: "📜 Stats", callback_data: "guild_stats" }
-          ],
-          [
-            { text: "🏆 Leaderboard", callback_data: "guild_lb" }
-          ],
-          [
-            { text: "🌐 Guild Guide", url: "https://example.com/guild-guide" }
+🏦 Coins: ${guild.vault.coins}
+🧬 Tokens: ${guild.vault.mythicalTokens}`,
+        parse_mode: "Markdown",
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "🏆 Guild LB", callback_data: "guild_lb" }
+            ],
+            [
+              { text: "🌐 Guild Guide", url: "https://t.me/DemonSlayer_Corps" }
+            ]
           ]
-        ]
+        }
       }
-    });
-  });
-
-  // =========================
-  // SIMPLE GUILD INFO
-  // =========================
-  bot.onText(/\/guild/, (msg) => {
-
-    const chatId = msg.chat.id;
-    const userId = msg.from.id.toString();
-
-    const guild = getUserGuild(userId);
-
-    if (!guild) return bot.sendMessage(chatId, "❌ No guild");
-
-    bot.sendMessage(chatId,
-      `🏰 ${guild.name}\n👥 Members: ${guild.members.length}\n💰 Coins: ${guild.vault.coins}`
     );
   });
 
@@ -161,107 +145,83 @@ module.exports = (bot) => {
   // DEPOSIT
   // =========================
   bot.onText(/\/deposit (coins|tokens) (\d+)/, (msg, match) => {
-
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
     const type = match[1];
     const amount = parseInt(match[2]);
 
-    const p = players[userId];
+    const player = getPlayer(userId);
     const guild = getUserGuild(userId);
 
-    if (!guild) return bot.sendMessage(chatId, "❌ No guild");
+    if (!guild) {
+      return bot.sendMessage(chatId, "❌ Join a guild first.");
+    }
 
     if (!guild.contributions[userId]) {
-      guild.contributions[userId] = { coins: 0, mythicalTokens: 0 };
+      guild.contributions[userId] = {
+        coins: 0,
+        mythicalTokens: 0
+      };
     }
 
     if (type === "coins") {
+      if (player.coins < amount) {
+        return bot.sendMessage(chatId, "❌ Not enough coins.");
+      }
 
-      if (p.coins < amount) return bot.sendMessage(chatId, "❌ Not enough coins");
-
-      p.coins -= amount;
+      player.coins -= amount;
       guild.vault.coins += amount;
       guild.contributions[userId].coins += amount;
+    }
 
-    } else {
+    if (type === "tokens") {
+      if (player.mythicalCrystals < amount) {
+        return bot.sendMessage(chatId, "❌ Not enough tokens.");
+      }
 
-      if (p.mythicalCrystals < amount) return bot.sendMessage(chatId, "❌ Not enough tokens");
-
-      p.mythicalCrystals -= amount;
+      player.mythicalCrystals -= amount;
       guild.vault.mythicalTokens += amount;
       guild.contributions[userId].mythicalTokens += amount;
     }
 
-    bot.sendMessage(chatId, `💰 Deposited ${amount} ${type}`);
+    players.save();
+    guilds.save();
+
+    bot.sendMessage(chatId, `✅ Deposited ${amount} ${type}`);
   });
 
   // =========================
-  // WITHDRAW (LEADER ONLY)
+  // UPGRADE GUILD
   // =========================
-  bot.onText(/\/withdraw (coins|tokens) (\d+) (\d+)/, (msg, match) => {
-
+  bot.onText(/\/upgradeguild/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
-    const type = match[1];
-    const amount = parseInt(match[2]);
-    const target = match[3];
-
     const guild = getUserGuild(userId);
 
-    if (!guild) return bot.sendMessage(chatId, "❌ No guild");
-    if (guild.leader !== userId) return bot.sendMessage(chatId, "❌ Only leader");
-
-    if (!players[target]) return bot.sendMessage(chatId, "❌ User not found");
-
-    if (type === "coins") {
-
-      if (guild.vault.coins < amount) return bot.sendMessage(chatId, "❌ Not enough vault");
-
-      guild.vault.coins -= amount;
-      players[target].coins += amount;
-
-    } else {
-
-      if (guild.vault.mythicalTokens < amount) return bot.sendMessage(chatId, "❌ Not enough vault");
-
-      guild.vault.mythicalTokens -= amount;
-      players[target].mythicalCrystals += amount;
+    if (!guild) {
+      return bot.sendMessage(chatId, "❌ No guild found.");
     }
 
-    bot.sendMessage(chatId, `👑 Sent ${amount} ${type} to user`);
-  });
-
-  // =========================
-  // BUTTON HANDLER
-  // =========================
-  bot.on("callback_query", (query) => {
-
-    const chatId = query.message.chat.id;
-    const userId = query.from.id.toString();
-
-    const guild = getUserGuild(userId);
-    if (!guild) return;
-
-    let text = "";
-
-    if (query.data === "guild_vault") {
-      text = `💰 Vault:\nCoins: ${guild.vault.coins}\nTokens: ${guild.vault.mythicalTokens}`;
+    if (guild.leader !== userId) {
+      return bot.sendMessage(chatId, "❌ Only leader can upgrade.");
     }
 
-    if (query.data === "guild_stats") {
-      const c = guild.contributions[userId] || { coins: 0, mythicalTokens: 0 };
-      text = `📜 Your Stats:\nCoins: ${c.coins}\nTokens: ${c.mythicalTokens}`;
+    if (guild.maxMembers >= 25) {
+      return bot.sendMessage(chatId, "❌ Already max upgraded.");
     }
 
-    if (query.data === "guild_lb") {
-      text = "🏆 Leaderboard coming soon...";
+    if (guild.vault.mythicalTokens < 150) {
+      return bot.sendMessage(chatId, "❌ Need 150 guild tokens.");
     }
 
-    bot.sendMessage(chatId, text);
-    bot.answerCallbackQuery(query.id);
+    guild.vault.mythicalTokens -= 150;
+    guild.maxMembers = 25;
+
+    guilds.save();
+
+    bot.sendMessage(chatId, "🏰 Guild upgraded to 25 members!");
   });
 
 };
