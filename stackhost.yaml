@@ -3,7 +3,7 @@ User:
   github: "Vaibhav19951"
 
 runtime:
-  image: node:22
+  image: node:20-alpine
 
 commands:
   build:
