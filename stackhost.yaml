@@ -1,12 +1,11 @@
 version: "1.0"
 
 runtime:
-  name: node
-  version: "20"
+  image: "node:20-alpine"
 
 build:
   - npm install
 
 start:
-  command: node index.js
+  command: "node index.js"
   
