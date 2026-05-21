@@ -92,9 +92,9 @@ module.exports = (bot) => {
     players.save();
     guilds.save();
 
-    bot.sendPhoto(
+    bot.sendAnimation(
       chatId,
-      "https://i.pinimg.com/736x/a8/ac/0a/a8ac0a06b1f0e2e716ed03b3d0811de6.jpg",
+      "https://i.pinimg.com/originals/e1/4c/bd/e14cbd36263f5061b3e3d1284dd27168.gif",
       {
         caption:
 `🏰 Guild Created
@@ -171,9 +171,9 @@ ${msg.from.first_name}
       );
     }
 
-    bot.sendPhoto(
+    bot.sendAnimation(
       chatId,
-      "https://i1-c.pinimg.com/1200x/03/2d/b8/032db8746347fbfb48e823d80777d8c4.jpg",
+      "https://i.pinimg.com/originals/1e/e0/e1/1ee0e17a9a4eadecb93890878164dbdb.gif",
       {
         caption:
 `🏰 *${guild.name}*
@@ -190,18 +190,7 @@ ${guild.vault.coins}
 🧬 Vault Tokens:
 ${guild.vault.mythicalTokens}`,
 
-        parse_mode: "Markdown",
-
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "🏆 Guild Leaderboard",
-                callback_data: "guild_lb"
-              }
-            ]
-          ]
-        }
+        parse_mode: "Markdown"
       }
     );
 
