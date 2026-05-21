@@ -1,121 +1,125 @@
-console.log("✅ UPGRADED MULTI-ASSET CHARACTER SYSTEM LOADED");
+console.log("✅ FIXED CHARACTER SYSTEM LOADED");
 
 const fs = require("fs");
 const path = require("path");
 
-// LOAD BOTH ASSET FILES
-let normalAssets = [];
-let mythicalAssets = [];
+const charFile = path.join(__dirname, "../data/characters.json");
 
-try {
-  normalAssets = require("../asset/assets");
-} catch {
-  // If it's a JSON file or needs standard parsing
-  const normalPath = path.join(__dirname, "../asset/assets);
-  if (fs.existsSync(normalPath)) normalAssets = JSON.parse(fs.readFileSync(normalPath, "utf8"));
-}
+// ADMIN ID CHECK
+const ADMIN_ID = "2086993762";
 
-try {
-  mythicalAssets = require("../asset/mythical");
-} catch {
-  const mythicalPath = path.join(__dirname, "../asset/mythical");
-  if (fs.existsSync(mythicalPath)) mythicalAssets = JSON.parse(fs.readFileSync(mythicalPath, "utf8"));
-}
+// LOAD DATA SAFELY
+let globalCharacters = [];
+try { globalCharacters = JSON.parse(fs.readFileSync(charFile, "utf8")); } catch { globalCharacters = []; }
+
+// SAVE ACTIONS
+const saveCharacters = () => fs.writeFileSync(charFile, JSON.stringify(globalCharacters, null, 2));
 
 module.exports = (bot) => {
 
-  // Helper function to pull everything together live with clear Rarity tags
-  const getAllCharacters = () => {
-    const combined = [];
-
-    // Process Normal Assets
-    if (Array.isArray(normalAssets)) {
-      normalAssets.forEach(c => {
-        combined.push({
-          id: c.id ? c.id.toString() : `N-${c.name}`,
-          name: c.name,
-          image: c.image || "https://i.imgur.com/fallback.jpg",
-          type: c.type || "Standard",
-          rarity: "⭐ Normal"
-        });
-      });
-    }
-
-    // Process Mythical Assets
-    if (Array.isArray(mythicalAssets)) {
-      mythicalAssets.forEach(c => {
-        combined.push({
-          id: c.id ? c.id.toString() : `M-${c.name}`,
-          name: c.name,
-          image: c.image || "https://i.imgur.com/fallback.jpg",
-          type: c.type || "Mythical breathing style",
-          rarity: "🔥 MYTHICAL"
-        });
-      });
-    }
-
-    return combined;
-  };
-
   // ==========================================
-  // 📦 /char (LIST ALL SYSTEMS)
+  // 🔨 /addchar [ADMIN MASTER CONTROLLER]
   // ==========================================
-  bot.onText(/\/char$/, (msg) => {
+  bot.onText(/\/addchar (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
-    const allChars = getAllCharacters();
+    const userId = msg.from.id.toString();
 
-    if (allChars.length === 0) {
-      return bot.sendMessage(chatId, "❌ No characters found inside asset files.");
+    if (userId !== ADMIN_ID) {
+      return bot.sendMessage(chatId, "❌ Unauthorized Access! Only the Head Slayer can add global characters.");
     }
 
-    let text = "📦 **All Available Characters**\n\n";
-    allChars.forEach(c => {
-      text += `🆔 \`${c.id}\` — **${c.name}** [${c.rarity}]\n`;
-    });
+    const input = match[1];
+    const parts = input.split("|");
 
-    text += "\nℹ️ *Type `/char [name]` or `/char [id]` to view the dynamic photo card!*";
-    bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
+    if (parts.length < 4) {
+      return bot.sendMessage(
+        chatId,
+        "❌ **Incorrect Syntax Format!**\n\nUse: `/addchar ID | Name | ImageURL | Type` \nExample: `/addchar 001 | Tanjiro Kamado | https://url.com/pic.jpg | Water Breathing`",
+        { parse_mode: "Markdown" }
+      );
+    }
+
+    const id = parts[0].trim();
+    const name = parts[1].trim();
+    const image = parts[2].trim();
+    const type = parts[3].trim();
+
+    try { globalCharacters = JSON.parse(fs.readFileSync(charFile, "utf8")); } catch { globalCharacters = []; }
+
+    const duplicate = globalCharacters.find(c => c.id === id || (c.name.toLowerCase() === name.toLowerCase() && c.type.toLowerCase() === type.toLowerCase()));
+    if (duplicate) {
+      return bot.sendMessage(chatId, `⚠️ An entry with ID **${id}** or Name **${name}** already exists!`);
+    }
+
+    const newChar = { id, name, image, type };
+    globalCharacters.push(newChar);
+    saveCharacters();
+
+    bot.sendMessage(
+      chatId,
+      `✅ **Character Registered Securely!**\n\n🆔 **ID:** ${id}\n⚔️ **Name:** ${name}\n📁 **Type:** ${type}`,
+      { parse_mode: "Markdown" }
+    );
   });
 
-  // ==========================================
-  // 🔎 /char [SEARCH WITH MULTI-RARITY DETECTION]
-  // ==========================================
-  bot.onText(/\/char (.+)/, (msg, match) => {
-    const chatId = msg.chat.id;
-    const query = match[1].toLowerCase().trim();
-    const allChars = getAllCharacters();
 
-    // Match by absolute unique ID string or check if name includes query phrase
-    const results = allChars.filter(c => 
+  // ==========================================
+  // 📦 /char MASTER ROUTE (HANDLES BOTH LIST & SEARCH)
+  // ==========================================
+  bot.onText(/\/char(?: (.+))?/, (msg, match) => {
+    const chatId = msg.chat.id;
+    
+    // Agar text query aayi hai toh match[1] hoga, varna null/empty string
+    const query = (match[1] || "").toLowerCase().trim();
+
+    try { globalCharacters = JSON.parse(fs.readFileSync(charFile, "utf8")); } catch { globalCharacters = []; }
+
+    if (globalCharacters.length === 0) {
+      return bot.sendMessage(chatId, "❌ No characters found inside the database.");
+    }
+
+    // CASE A: Agar sirf /char type kiya hai (No search query input)
+    if (!query) {
+      let text = "📦 **All Registered Characters**\n\n";
+      globalCharacters.forEach(c => {
+        text += `🆔 \`${c.id}\` \n⚔️ **${c.name}** (${c.type})\n\n`;
+      });
+
+      text += "ℹ️ *Type `/char [name]` or `/char [id]` to view details and image card!*";
+      return bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
+    }
+
+    // CASE B: Agar user ne kuch search kiya hai (e.g., /char tanjiro or /char 001)
+    const results = globalCharacters.filter(c => 
       c.id.toLowerCase() === query || 
       c.name.toLowerCase().includes(query)
     );
 
     if (results.length === 0) {
-      return bot.sendMessage(chatId, `❌ No character variation found matching "**${match[1]}**".`);
+      return bot.sendMessage(chatId, `❌ No character found matching "**${match[1]}**".`);
     }
 
-    // If exactly 1 match (like using exact ID) -> Send photo directly
+    // Single result match → Direct card response send karo
     if (results.length === 1) {
       const c = results[0];
       return bot.sendPhoto(chatId, c.image, {
-        caption: `🆔 **ID:** \`${c.id}\`\n⚔️ **Name:** ${c.name}\n✨ **Rarity:** ${c.rarity}\n📁 **Style:** ${c.type}`,
+        caption: `🆔 **ID:** \`${c.id}\`\n⚔️ **Name:** ${c.name}\n📁 **Style Type:** ${c.type}`,
         parse_mode: "Markdown"
       });
     }
 
-    // If multiple variations found (e.g., searching "Tanjiro" brings back normal AND mythical)
+    // Multiple variants match → Inline selection buttons generate karo
     let buttons = [];
     results.forEach(c => {
       buttons.push([
         {
-          text: `[${c.rarity}] ${c.name} (${c.type})`,
-          callback_data: `assetchar|${c.id}`
+          text: `🆔 ${c.id} - ${c.name} (${c.type})`,
+          callback_data: `char_id|${c.id}`
         }
       ]);
     });
 
-    bot.sendMessage(chatId, `🔎 **Multiple tiers found for "${match[1]}". Choose your version:**`, {
+    bot.sendMessage(chatId, "🔎 **Multiple character matches found. Select version below:**", {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: buttons
@@ -123,25 +127,28 @@ module.exports = (bot) => {
     });
   });
 
+
   // ==========================================
-  // 🔘 INLINE INTERACTION HANDLER 
+  // 🔘 INLINE SELECTOR BUTTON HANDLER
   // ==========================================
   bot.on("callback_query", (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
 
-    if (!data.startsWith("assetchar|")) return;
+    if (!data.startsWith("char_id|")) return;
 
     const [, id] = data.split("|");
-    const allChars = getAllCharacters();
-    const char = allChars.find(c => c.id === id);
+
+    try { globalCharacters = JSON.parse(fs.readFileSync(charFile, "utf8")); } catch { globalCharacters = []; }
+
+    const char = globalCharacters.find(c => c.id === id);
 
     if (!char) {
       return bot.sendMessage(chatId, "❌ Character record not found.");
     }
 
     bot.sendPhoto(chatId, char.image, {
-      caption: `🆔 **ID:** \`${char.id}\`\n⚔️ **Name:** ${char.name}\n✨ **Rarity:** ${char.rarity}\n📁 **Style:** ${char.type}`,
+      caption: `🆔 **ID:** \`${char.id}\`\n⚔️ **Name:** ${char.name}\n📁 **Style Type:** ${char.type}`,
       parse_mode: "Markdown"
     });
 
