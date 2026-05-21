@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const playerFile = path.join(__dirname, "../data/players.json");
-const guildFile = path.join(__dirname, "../data/guilds.json");
+const guildFile = path.join(__dirname, "../data/guild.json");
 
 // LOAD DATA SAFELY
 let players = {};
