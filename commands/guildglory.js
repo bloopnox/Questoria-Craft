@@ -97,7 +97,7 @@ module.exports = (bot) => {
 
     bot.sendPhoto(
       chatId,
-      "https://i1-c.pinimg.com/1200x/0f/4b/81/0f4b818b962dc5a441b21dfa99724eea.jpg",
+      "https://pic-link-bot.lovable.app/i/telegram-1779355527219-44f9fd4e.jpg",
       {
         caption:
 `✨ Glory Added Successfully
@@ -108,14 +108,21 @@ ${guildName}
 🏆 Total Glory:
 ${guild.glory}
 
+🎯 Reward Progress
+
+2000 Glory → 50000 Coins
+4000 Glory → 100000 Coins
+6000 Glory → 100 Mythical Tokens
+8000 Glory → 20 Guild Tokens
+
 ${rewards}`,
 
         reply_markup: {
           inline_keyboard: [
             [
               {
-                text: "🏰 View Guild",
-                callback_data: "viewguild"
+                text: "🏰 Guild System",
+                callback_data: "guildsystem"
               }
             ]
           ]
