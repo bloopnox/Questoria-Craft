@@ -1,18 +1,7 @@
-name: "demon-slayer-bot"
-github: "Vaibhav19951"
-
-runtime:
-  image: node:20-alpine
-
-commands:
-  build:
+version: "1.0"
+build:
+  commands:
     - npm install
-  start: "node index.js"
-
-repository:
-  branch: "main"
-  auto_deploy: true
-
-environment:
-  - BOT_TOKEN=${BOT_TOKEN}
+start:
+  command: node index.js
   
