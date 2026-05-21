@@ -11,6 +11,8 @@ const demons = [
     attack: 12,
     defense: 5,
     speed: 10,
+    reward: 50-120,
+    exp: 20-40,
     abilities: ["Claw Slash", "Savage Bite"],
     rarity: "Common",
     image: "https://pic-link-bot.lovable.app/i/telegram-1779349418381-529fdeba.jpg"
@@ -24,6 +26,8 @@ const demons = [
     attack: 13,
     defense: 6,
     speed: 14,
+    reward: 50-120,
+    exp: 20-40,
     abilities: ["Mud Trap", "Swamp Grab"],
     rarity: "Common",
     image: "https://pic-link-bot.lovable.app/i/telegram-1779349450080-2d7bcd3d.jpg"
@@ -37,6 +41,8 @@ const demons = [
     attack: 14,
     defense: 5,
     speed: 16,
+    reward: 50-120,
+    exp: 20-40,
     abilities: ["Tongue Whip", "Leap"],
     rarity: "Common",
     image: "https://pic-link-bot.lovable.app/i/telegram-1779349544295-babc10f0.jpg"
@@ -50,6 +56,8 @@ const demons = [
     attack: 15,
     defense: 7,
     speed: 12,
+    reward: 50-120,
+    exp: 20-40,
     abilities: ["Poison Fang", "Spider Jump"],
     rarity: "Common",
     image: "https://i.pinimg.com/736x/5f/d9/76/5fd9764fe5aa029d320c8051f625f946.jpg"
@@ -63,6 +71,8 @@ const demons = [
     attack: 13,
     defense: 8,
     speed: 11,
+    reward: 50-120,
+    exp: 20-40,
     abilities: ["Web Control", "Paralyze"],
     rarity: "Common",
     image: "https://i.pinimg.com/736x/28/56/57/285657c7a5678ee2fadda93de342a892.jpg"
@@ -76,6 +86,8 @@ const demons = [
     attack: 16,
     defense: 12,
     speed: 6,
+    reward: 50-120,
+    exp: 20-40,
     abilities: ["Horn Charge"],
     rarity: "Common",
     image: "https://i.pinimg.com/736x/df/a7/bd/dfa7bd3e1a38ee5ae7615e7e4ff98d8e.jpg"
@@ -89,6 +101,8 @@ const demons = [
     attack: 16,
     defense: 12,
     speed: 6,
+    reward: 50-120,
+    exp: 20-40,
     abilities: ["Hand Charge"],
     rarity: "Common",
     image: "https://pic-link-bot.lovable.app/i/telegram-1779349375431-bc6c45db.jpg"
@@ -106,6 +120,8 @@ const demons = [
     attack: 22,
     defense: 13,
     speed: 14,
+    reward: 150-300,
+    exp: 50-100,
     abilities: ["Drum Rotation", "Shockwave"],
     rarity: "Uncommon",
     image: "https://i.pinimg.com/1200x/1a/23/24/1a23242df6b2cc8a0269c1bc9110c0f5.jpg"
@@ -119,6 +135,8 @@ const demons = [
     attack: 24,
     defense: 12,
     speed: 15,
+    reward: 150-300,
+    exp: 50-100,
     abilities: ["Blood Burst"],
     rarity: "Uncommon",
     image: "https://i.pinimg.com/1200x/3c/f9/1c/3cf91c27a075a5fa7267f76e0bc01293.jpg"
@@ -132,6 +150,8 @@ const demons = [
     attack: 23,
     defense: 11,
     speed: 20,
+    reward: 150-300,
+    exp: 50-100,
     abilities: ["Night Dash"],
     rarity: "Uncommon",
     image: "https://i.pinimg.com/736x/4c/cf/15/4ccf15ca730a2db1a3bbc1c93dbf6556.jpg"
@@ -149,6 +169,8 @@ const demons = [
     attack: 26,
     defense: 15,
     speed: 22,
+    reward: 400-900,
+    exp: 150-300,
     abilities: ["Fear Dash", "Rapid Claw"],
     rarity: "Rare",
     image: "https://i.pinimg.com/736x/4b/b4/87/4bb487db4c3f6527697dd00976990dbb.jpg"
@@ -162,6 +184,8 @@ const demons = [
     attack: 30,
     defense: 18,
     speed: 20,
+    reward: 400-900,
+    exp: 150-300,
     abilities: ["Thread Cage", "Cutting Web"],
     rarity: "Rare",
     image: "https://i.pinimg.com/736x/34/e2/d2/34e2d26fe387dcb051019b880519b2ba.jpg"
@@ -175,6 +199,8 @@ const demons = [
     attack: 28,
     defense: 14,
     speed: 24,
+    reward: 400-900,
+    exp: 150-300,
     abilities: ["Moon Dash"],
     rarity: "Rare",
     image: "https://i.pinimg.com/736x/73/ba/92/73ba9296be0faa2c526a2b5d69d7b3e1.jpg"
@@ -188,6 +214,8 @@ const demons = [
     attack: 29,
     defense: 16,
     speed: 26,
+    reward: 400-900,
+    exp: 150-300,
     abilities: ["Flash Movement"],
     rarity: "Rare",
     image: "https://i.pinimg.com/736x/57/29/b6/5729b6e805809444dbd6e9fc7f6711bd.jpg"
@@ -201,6 +229,8 @@ const demons = [
     attack: 33,
     defense: 17,
     speed: 18,
+    reward: 400-900,
+    exp: 150-300,
     abilities: ["Blood Explosion"],
     rarity: "Rare",
     image: "https://i.pinimg.com/1200x/bb/84/2e/bb842e1e78397c7ca8c34388628344f5.jpg"
@@ -214,6 +244,8 @@ const demons = [
     attack: 36,
     defense: 20,
     speed: 18,
+    reward: 400-900,
+    exp: 150-300,
     abilities: ["Sleep Blood Art", "Dream Trap"],
     rarity: "Epic",
     image: "https://i.pinimg.com/736x/9b/3f/e6/9b3fe6d6a42d89d43c93f185e6e56405.jpg"
@@ -231,6 +263,8 @@ const demons = [
     attack: 45,
     defense: 25,
     speed: 28,
+    reward: 1500-4000,
+    exp: 500-1200,
     abilities: ["Blood Sickles", "Poison Slash"],
     rarity: "Epic",
     image: "https://i.pinimg.com/736x/cd/f4/f7/cdf4f7e4c73ec905a3ea511a21986b95.jpg"
@@ -244,6 +278,8 @@ const demons = [
     attack: 40,
     defense: 22,
     speed: 26,
+    reward: 1500-4000,
+    exp: 500-1200,
     abilities: ["Obi Slash", "Ribbon Cage"],
     rarity: "Epic",
     image: "https://i.pinimg.com/1200x/cd/12/a5/cd12a5b50d5e3871c7ba6cfbe60cf4ef.jpg"
@@ -257,6 +293,8 @@ const demons = [
     attack: 48,
     defense: 28,
     speed: 22,
+    reward: 1500-4000,
+    exp: 500-1200,
     abilities: ["Fish Summon", "Vase Warp"],
     rarity: "Epic",
     image: "https://i.pinimg.com/736x/9d/e0/f0/9de0f00261e5cfd6d04b8bf4d54459d7.jpg"
@@ -270,6 +308,8 @@ const demons = [
     attack: 50,
     defense: 30,
     speed: 24,
+    reward: 1500-4000,
+    exp: 500-1200,
     abilities: ["Emotion Clones", "Lightning Spear"],
     rarity: "Legendary",
     image: "https://i.pinimg.com/736x/68/1d/fc/681dfca7075685cbb7e525a4224c9b2c.jpg"
@@ -283,6 +323,8 @@ const demons = [
     attack: 62,
     defense: 35,
     speed: 34,
+    reward: 1500-4000,
+    exp: 500-1200,
     abilities: ["Destructive Death", "Compass Needle"],
     rarity: "Legendary",
     image: "https://i.pinimg.com/736x/61/05/dc/6105dc802b7eb7edc70950810cc0ed6e.jpg"
@@ -296,6 +338,8 @@ const demons = [
     attack: 68,
     defense: 40,
     speed: 30,
+    reward: 1500-4000,
+    exp: 500-1200,
     abilities: ["Frozen Lotus", "Ice Clone"],
     rarity: "Legendary",
     image: "https://i.pinimg.com/736x/83/c8/28/83c8282fb4abf1e5195a88e22932cb22.jpg"
@@ -307,7 +351,9 @@ const demons = [
     type: "Boss",
     hp: 700,
     attack: 82,
-    defense: 50,
+    defense: 5,
+    reward: 3000-5000,
+    exp: 1000-2000,
     speed: 36,
     abilities: ["Moon Breathing", "Crescent Blades"],
     rarity: "Mythic",
@@ -326,6 +372,8 @@ const demons = [
     attack: 58,
     defense: 30,
     speed: 32,
+    reward: 2000-4000,
+    exp: 1000-1500,
     abilities: ["Dark Thunder", "Thunder Breathing"],
     rarity: "Legendary",
     image: "https://i.pinimg.com/736x/f1/24/a2/f124a23030cce0f9d3303b975b73455a.jpg"
@@ -339,6 +387,8 @@ const demons = [
     attack: 55,
     defense: 38,
     speed: 24,
+    reward: 3000-5000,
+    exp: 1000-2000,
     abilities: ["Infinity Castle", "Biwa Shift"],
     rarity: "Legendary",
     image: "https://i.pinimg.com/736x/17/1b/ca/171bca6870b37ce607ee0083b9a7582b.jpg"
@@ -352,6 +402,8 @@ const demons = [
     attack: 100,
     defense: 60,
     speed: 45,
+    reward: 3000-5000,
+    exp: 1000-2000,
     abilities: [
       "Black Blood",
       "Tentacle Rampage",
