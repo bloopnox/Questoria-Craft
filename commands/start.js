@@ -5,8 +5,7 @@ const {
   START_IMG,
   HARU_IMG,
   SORA_IMG
-} = require("../assets/assets");
-
+} = require("../assets");
 module.exports = (bot) => {
 
   // =========================
