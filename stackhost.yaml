@@ -1,10 +1,20 @@
-version: "1.0"
+version: "2.0.0"
+
+user:
+  name: "Vaibhav19951"
+  github: "Vaibhav19951"
 
 runtime:
-  image: node:22
+  image: "node:22"
 
 commands:
+  package: ""
   build:
-    - npm install
+    - "npm install"
   start: "node index.js"
+
+repository:
+  branch: "main"
+  auto_deploy: true
+
   
