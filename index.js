@@ -105,7 +105,8 @@ bot.setMyCommands([
   { command: "daily", description: "Claim daily reward" },
   { command: "work", description: "Earn coins" },
   { command: "createguild", description: "to create paid guild" },
-  { command: "deposit", description: "Deposit resources" },
+  { command: "depositcoins", description: "Deposit resources" },
+  { command: "deposittokens", description: "Deposit resources" },
   { command: "upgradeguild", description: "Upgrade guild" }, 
   { command: "joinguild", description: "Join guild" },
   { command: "owner", description: "@shyyy_o" }
