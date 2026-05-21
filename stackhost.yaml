@@ -1,2 +1,6 @@
-build: npm install
-start: node index.js
+version: "1.0"
+build:
+  - npm install
+start:
+  command: node index.js
+  
