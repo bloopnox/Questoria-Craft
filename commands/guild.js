@@ -86,6 +86,20 @@ module.exports = (bot) => {
       vault: {
         coins: 0,
         mythicalTokens: 0
+      },
+
+      // =========================
+      // GUILD GLORY SYSTEM
+      // =========================
+      glory: 0,
+
+      guildTokens: 0,
+
+      rewardClaimed: {
+        2000: false,
+        4000: false,
+        6000: false,
+        8000: false
       }
     };
 
@@ -184,6 +198,12 @@ ${guild.leader}
 👥 Members:
 ${guild.members.length}/${guild.maxMembers}
 
+🏆 Glory:
+${guild.glory}
+
+🏅 Guild Tokens:
+${guild.guildTokens}
+
 🏦 Vault Coins:
 ${guild.vault.coins}
 
@@ -227,14 +247,14 @@ ${guild.vault.mythicalTokens}`,
       );
     }
 
-    if (guild.vault.mythicalTokens < 150) {
+    if (guild.guildTokens < 20) {
       return bot.sendMessage(
         chatId,
-        "❌ Need 150 guild tokens."
+        "❌ Need 20 Guild Tokens."
       );
     }
 
-    guild.vault.mythicalTokens -= 150;
+    guild.guildTokens -= 20;
 
     guild.maxMembers = 25;
 
