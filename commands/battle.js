@@ -1,14 +1,14 @@
 const demons = require("../assets/demons");
 
 module.exports = (bot) => {
-  bot.onText(/\/explore/, async (msg) => {
+  bot.onText(/\/battle/, async (msg) => {
     const chatId = msg.chat.id;
     const user = msg.from;
 
     // 🎲 Random Demon
     const demon = demons[Math.floor(Math.random() * demons.length)];
 
-    // 🧍 Fake Player Stats (replace later with database)
+    // 🧍 Player Stats
     const player = {
       name: user.first_name,
       hp: 120,
@@ -20,7 +20,7 @@ module.exports = (bot) => {
     let playerHp = player.hp;
     let demonHp = demon.hp;
 
-    let battleLog = `⚔️ EXPLORATION STARTED ⚔️
+    let battleLog = `⚔️ BATTLE STARTED ⚔️
 
 🧍 Slayer: ${player.name}
 ✨ Level: ${player.level}
@@ -42,45 +42,54 @@ ${demon.abilities.map(a => `• ${a}`).join("\n")}
 `;
 
     try {
-      // 📸 Send Demon Image
-      await bot.sendPhoto(chatId, demon.image, {
-        caption: `🌌 You explored a dark area...
 
-👹 ${demon.name} appeared!
+      // 📸 Demon Image
+      await bot.sendPhoto(chatId, demon.image, {
+        caption: `🌌 A Demon Appeared!
+
+👹 ${demon.name}
 
 🏷 Rank: ${demon.rank}
 ⚡ Type: ${demon.type}
 ✨ Rarity: ${demon.rarity}`,
       });
 
-      // ⚔️ Battle Loop
+      // ⚔️ Fight Loop
       while (playerHp > 0 && demonHp > 0) {
-        // Player Damage
+
+        // Player Attack
         const playerDamage =
           Math.max(5, player.attack - Math.floor(demon.defense / 2));
 
         demonHp -= playerDamage;
 
+        if (demonHp < 0) demonHp = 0;
+
         battleLog += `🗡 You attacked ${demon.name}
 💥 -${playerDamage} HP
+❤️ Demon HP: ${demonHp}
 
 `;
 
         if (demonHp <= 0) break;
 
-        // Demon Damage
+        // Demon Attack
         const demonDamage =
           Math.max(3, demon.attack - Math.floor(player.defense / 2));
 
         playerHp -= demonDamage;
 
+        if (playerHp < 0) playerHp = 0;
+
         battleLog += `👹 ${demon.name} attacked back!
 💥 -${demonDamage} HP
+❤️ Your HP: ${playerHp}
 
 `;
 
-        // Random Ability Trigger
+        // 🔥 Ability Chance
         if (Math.random() < 0.25) {
+
           const skill =
             demon.abilities[
               Math.floor(Math.random() * demon.abilities.length)
@@ -90,15 +99,19 @@ ${demon.abilities.map(a => `• ${a}`).join("\n")}
 
           playerHp -= extra;
 
+          if (playerHp < 0) playerHp = 0;
+
           battleLog += `🔥 ${demon.name} used ${skill}!
 💢 Extra Damage: ${extra}
+❤️ Your HP: ${playerHp}
 
 `;
         }
       }
 
-      // 🏆 Result
+      // 🏆 Results
       if (playerHp > 0) {
+
         const reward =
           Math.floor(demon.hp / 2) +
           Math.floor(Math.random() * 100);
@@ -118,7 +131,9 @@ ${demon.abilities.map(a => `• ${a}`).join("\n")}
 ✨ ${exp} EXP
 
 ❤️ Remaining HP: ${playerHp}`;
+
       } else {
+
         battleLog += `━━━━━━━━━━━━━━━
 
 ☠️ DEFEAT!
@@ -128,17 +143,18 @@ ${demon.name} defeated you...
 💔 Better luck next time.`;
       }
 
-      // ⏳ Small Delay
+      // ⏳ Send Battle Log
       setTimeout(() => {
         bot.sendMessage(chatId, battleLog);
       }, 2000);
 
     } catch (error) {
+
       console.log(error);
 
       bot.sendMessage(
         chatId,
-        "❌ Exploration failed."
+        "❌ Battle failed."
       );
     }
   });
