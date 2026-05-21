@@ -1,20 +1,23 @@
 const players = require("../data/players");
 
+// =========================
+// GET CHARACTERS
+// =========================
 const getCharacters = () => {
   const owner = players["2086993762"];
 
   if (!owner || !owner.inventory) return [];
 
   return owner.inventory.map(c => {
-    const [name, image, type] = c.split("|");
-    return { name, image, type };
+    const [id, name, type] = c.split("|");
+    return { id, name, type };
   });
 };
 
 module.exports = (bot) => {
 
   // =========================
-  // LIST ALL CHARACTERS
+  // LIST ALL
   // =========================
   bot.onText(/\/char$/, (msg) => {
     const chars = getCharacters();
@@ -23,17 +26,17 @@ module.exports = (bot) => {
       return bot.sendMessage(msg.chat.id, "❌ No characters found");
     }
 
-    let text = "📦 Characters List\n\n";
+    let text = "📦 All Characters\n\n";
 
     chars.forEach(c => {
-      text += `⚔️ ${c.name} (${c.type})\n`;
+      text += `🆔 ${c.id}\n⚔️ ${c.name} (${c.type})\n\n`;
     });
 
     bot.sendMessage(msg.chat.id, text);
   });
 
   // =========================
-  // VIEW SINGLE CHARACTER
+  // SEARCH FIX HERE
   // =========================
   bot.onText(/\/char (.+)/, (msg, match) => {
     const query = match[1].toLowerCase();
@@ -48,20 +51,19 @@ module.exports = (bot) => {
       return bot.sendMessage(msg.chat.id, "❌ No character found");
     }
 
-    // if only one result
     if (results.length === 1) {
       const c = results[0];
 
-      return bot.sendPhoto(msg.chat.id, c.image, {
-        caption: `⚔️ ${c.name}\n📁 ${c.type}`
-      });
+      return bot.sendMessage(
+        msg.chat.id,
+        `🆔 ${c.id}\n⚔️ ${c.name}\n📁 ${c.type}`
+      );
     }
 
-    // multiple results
     let text = "🔎 Multiple found:\n\n";
 
     results.forEach(c => {
-      text += `⚔️ ${c.name} (${c.type})\n`;
+      text += `🆔 ${c.id}\n⚔️ ${c.name} (${c.type})\n\n`;
     });
 
     bot.sendMessage(msg.chat.id, text);
