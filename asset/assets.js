@@ -333,7 +333,7 @@ const characters = [
   speed: 38,
   rarity: "UR",
   image: "https://pic-link-bot.lovable.app/i/telegram-1779346196278-50a29c00.jpg"
-},,
+},
 
 // 🌌 Witch (Custom - OP character)
 {
