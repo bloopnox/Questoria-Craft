@@ -83,6 +83,74 @@ module.exports = (bot) => {
     bot.sendMessage(msg.chat.id, `✅ Added ${amount} coins to ${target}`);
   });
 
+  const players = require("../data/players");
+
+const OWNER_ID = "2086993762";
+
+const isOwner = (msg) => msg.from.id.toString() === OWNER_ID;
+
+const getOwnerInventory = () => {
+  const owner = players[OWNER_ID];
+
+  if (!owner) {
+    players[OWNER_ID] = { inventory: [] };
+  }
+
+  if (!players[OWNER_ID].inventory) {
+    players[OWNER_ID].inventory = [];
+  }
+
+  return players[OWNER_ID].inventory;
+};
+
+module.exports = (bot) => {
+
+  // =========================
+  // ADD CHARACTER
+  // =========================
+  bot.onText(/\/addcharacter (.+)/, (msg, match) => {
+    if (!isOwner(msg)) return;
+
+    const data = match[1].split("|");
+
+    if (data.length < 3) {
+      return bot.sendMessage(
+        msg.chat.id,
+        "❌ Format:\n/addcharacter Name|ImageURL|Type"
+      );
+    }
+
+    const name = data[0].trim();
+    const image = data[1].trim();
+    const type = data[2].trim(); // assets / mythical
+
+    const inv = getOwnerInventory();
+
+    inv.push(`${name}|${image}|${type}`);
+
+    players.save();
+
+    bot.sendMessage(msg.chat.id, `✅ Added Character: ${name}`);
+  });
+
+  // =========================
+  // REMOVE CHARACTER
+  // =========================
+  bot.onText(/\/removecharacter (.+)/, (msg, match) => {
+    if (!isOwner(msg)) return;
+
+    const name = match[1].trim();
+
+    const inv = getOwnerInventory();
+
+    players[OWNER_ID].inventory = inv.filter(c => !c.startsWith(name + "|"));
+
+    players.save();
+
+    bot.sendMessage(msg.chat.id, `🗑️ Removed: ${name}`);
+  });
+
+};
   // =========================
   // REMOVE COINS
   // =========================
