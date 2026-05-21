@@ -1,126 +1,90 @@
+require("dotenv").config();
+
 console.log("🚀 FILE STARTED");
-console.log("TOKEN:", process.env.BOT_TOKEN);
+
 const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
 
 // =========================
 // SAFE TOKEN CHECK
 // =========================
 const TOKEN = process.env.BOT_TOKEN;
 
+console.log("TOKEN LOADED:", !!TOKEN);
+
 if (!TOKEN) {
-  console.log("❌ BOT_TOKEN missing in environment variables!");
+  console.log("❌ BOT_TOKEN missing!");
   process.exit(1);
 }
 
 // =========================
-// BOT INIT (STACKHOST SAFE)
+// BOT INIT
 // =========================
 const bot = new TelegramBot(TOKEN, {
-  polling: {
-    interval: 2000,
-    autoStart: true,
-    params: {
-      timeout: 10
-    }
-  }
+  polling: true
 });
 
+// =========================
+// GLOBAL ERROR HANDLING
+// =========================
 process.on("uncaughtException", err => {
-  console.log("CRASH:", err.message);
+  console.log("❌ CRASH:", err.message);
 });
 
 process.on("unhandledRejection", err => {
-  console.log("PROMISE ERROR:", err.message);
-}); 
-
-// =========================
-// GLOBAL ERROR HANDLING (IMPORTANT)
-// =========================
-process.on("uncaughtException", (err) => {
-  console.log("❌ Uncaught Error:", err.message);
-});
-
-process.on("unhandledRejection", (err) => {
-  console.log("❌ Promise Error:", err.message);
+  console.log("❌ PROMISE ERROR:", err.message);
 });
 
 // =========================
-// SAFE COMMAND LOADER
+// COMMAND LOADER
 // =========================
 const commandsPath = path.join(__dirname, "commands");
 
 if (fs.existsSync(commandsPath)) {
+  const files = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
 
-  const commandFiles = fs
-    .readdirSync(commandsPath)
-    .filter(file => file.endsWith(".js"));
-
-  for (const file of commandFiles) {
-
-    const filePath = path.join(commandsPath, file);
-
+  for (const file of files) {
     try {
-      const command = require(filePath);
-
-      if (typeof command === "function") {
-        command(bot);
-        console.log(`✅ Loaded: ${file}`);
-      } else {
-        console.log(`⚠️ Skipped (not function): ${file}`);
+      const cmd = require(`./commands/${file}`);
+      if (typeof cmd === "function") {
+        cmd(bot);
+        console.log("✅ Loaded:", file);
       }
-
-    } catch (err) {
-      console.log(`❌ Error in ${file}:`, err.message);
+    } catch (e) {
+      console.log("❌ Error:", file, e.message);
     }
   }
-
-} else {
-  console.log("⚠️ commands folder not found!");
 }
 
 // =========================
-// MENU BUTTONS
+// COMMAND MENU
 // =========================
 bot.setMyCommands([
   { command: "start", description: "Start the game" },
   { command: "help", description: "Show all commands" },
-  { command: "summon", description: "Summon a character" },
-  { command: "inventory", description: "View your items" },
-  { command: "battle", description: "Fight a demon" },
-  { command: "profile", description: "View your profile" },
-  { command: "buy", description: "Shop weapons" },
-  { command: "equip", description: "Equip a weapon" },
-  { command: "addchar", description: "Add character" },
-  { command: "char", description: "View character" },
-  { command: "mythicalshop", description: "Mythical shop" },
-  { command: "redeem", description: "Redeem characters" },
-  { command: "guild", description: "view guild" },
-  { command: "myguild", description: "My guild info" },
-  { command: "guildlb", description: "Guild leaderboard" },
-  { command: "guide", description: "Bot guide" },
+
   { command: "balance", description: "Check balance" },
-  { command: "daily", description: "Claim daily reward" },
+  { command: "daily", description: "Claim reward" },
   { command: "work", description: "Earn coins" },
-  { command: "createguild", description: "to create paid guild" },
-  { command: "depositcoins", description: "Deposit resources" },
-  { command: "deposittokens", description: "Deposit resources" },
-  { command: "upgradeguild", description: "Upgrade guild" }, 
-  { command: "joinguild", description: "Join guild" },
-  { command: "owner", description: "@shyyy_o" }
-  
+  { command: "deposit", description: "Deposit coins" },
+
+  { command: "guild", description: "Guild system" },
+  { command: "guildlb", description: "Guild leaderboard" },
+
+  { command: "battle", description: "Fight demons" },
+  { command: "summon", description: "Summon character" },
+
+  { command: "profile", description: "View profile" }
 ])
-.then(() => console.log("📜 Menu updated"))
+.then(() => console.log("📜 Menu loaded"))
 .catch(err => console.log("❌ Menu error:", err.message));
 
 // =========================
-// KEEP ALIVE (STACKHOST NEED)
+// START LOGS
 // =========================
 setInterval(() => {
   console.log("🤖 Bot alive...");
 }, 30000);
 
-// =========================
 console.log("⚔️ Bot running...");
