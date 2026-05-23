@@ -1,8 +1,10 @@
 {
   "2086993762": {
-    "coins": 1000,
-    "gems": 0,
-    "mythicalCrystals": 5,
+    "coins": 9191919191,
+    "mythicalCrystals": 0,
+    "inventory": [],
+    "level": 1,
+    "xp": 0,
     "character": "Tanjiro"
   }
 }
