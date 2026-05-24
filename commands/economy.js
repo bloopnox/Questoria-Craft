@@ -1,168 +1,184 @@
-console.log("💰 VELIX OS | DEMON SLAYER ECONOMY ENGINE [UI v3.0 - ANTI-NAN RECOVERY]");
+// ==========================================
+// 🪙 AUTOMATED CORPS ECONOMY CORE SYSTEM (economy.js)
+// ==========================================
+const fs = require('fs');
+const path = require('path');
 
-const fs = require("fs");
-const path = require("path");
-const playerFile = path.join(process.cwd(), "data", "players.json");
+// Global Database Path
+const dbPath = path.join(__dirname, 'data', 'players.json');
 
-const { characters: normalCards } = require("../asset/assets.js");
-const { mythical: mythicCards } = require("../asset/mythical.js");
+// Mock Assets Configuration Pools (If not imported from other config sheets)
+const normalCards = [
+    { name: "Mizunoto Recruit" }, { name: "Mizunoe Slayer" }, 
+    { name: "Kanoto Swordsman" }, { name: "Kanoe Guardian" },
+    { name: "Tsuchinoto Enforcer" }
+];
 
-const getDB = () => {
+const mythicCards = [
+    { id: "tanjiro_mythic", name: "Kamado Tanjiro (Sun Breathing)" },
+    { id: "nezuko_mythic", name: "Kamado Nezuko (Awakened Form)" },
+    { id: "zenitsu_mythic", name: "Agatsuma Zenitsu (Godspeed)" },
+    { id: "muzan_mythic", name: "Kibutsuji Muzan (Demon King)" }
+];
+
+// Helper Functions: Safe Read/Write Core Storage
+function getDB() {
     try {
-        if (!fs.existsSync(playerFile)) return {};
-        const raw = fs.readFileSync(playerFile, "utf8");
-        return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
-};
+        if (!fs.existsSync(dbPath)) {
+            fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+            fs.writeFileSync(dbPath, JSON.stringify({}), 'utf8');
+        }
+        const data = fs.readFileSync(dbPath, 'utf8');
+        return JSON.parse(data || '{}');
+    } catch (e) {
+        console.error("🚨 DB Read Error:", e);
+        return {};
+    }
+}
 
-const saveDB = (data) => {
+function saveDB(data) {
     try {
-        const tempPath = playerFile + ".tmp";
-        fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), "utf8");
-        fs.renameSync(tempPath, playerFile);
-    } catch (e) { console.error("🔥 Corps Write Failure:", e); }
-};
+        fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.error("🚨 DB Write Error:", e);
+    }
+}
+
+// Data Sanitization Shield (No NaN / Undefined variables allowed)
+function sanitizeUserObject(user) {
+    let u = user || {};
+    return {
+        coins: Math.max(0, parseInt(u.coins) || 500),
+        crystals: Math.max(0, parseInt(u.crystals) || 0),
+        mythic: Math.max(0, parseInt(u.mythic) || 0),
+        inventory: Array.isArray(u.inventory) ? u.inventory : [],
+        materials: u.materials && typeof u.materials === 'object' ? u.materials : {},
+        lastWork: parseInt(u.lastWork) || 0,
+        lastTask: parseInt(u.lastTask) || 0
+    };
+}
 
 module.exports = (bot) => {
 
-    // Anti-NaN & Null Validation Pipeline
-    const sanitizeUserObject = (user) => {
-        if (!user) user = {};
-        
-        user.coins = isNaN(parseInt(user.coins)) ? 500 : parseInt(user.coins);
-        user.crystals = isNaN(parseInt(user.crystals)) ? 0 : parseInt(user.crystals);
-        user.mythic = isNaN(parseInt(user.mythic)) ? 0 : parseInt(user.mythic);
-        user.exp = isNaN(parseInt(user.exp)) ? 0 : parseInt(user.exp);
-        user.level = isNaN(parseInt(user.level)) || parseInt(user.level) <= 0 ? 1 : parseInt(user.level);
-        
-        if (!user.last_daily) user.last_daily = "";
-        if (!user.active_task) user.active_task = null;
-        if (!user.inventory || !Array.isArray(user.inventory)) user.inventory = [];
-        if (!user.materials || Array.isArray(user.materials) || typeof user.materials !== "object") user.materials = {};
-        
-        return user;
-    };
+    // ==========================================
+    // 🏦 1. /balance (STORAGE ACCOUNT INQUIRY)
+    // ==========================================
+    bot.onText(/\/balance/, (msg) => {
+        const chatId = msg.chat.id;
+        const userId = msg.from.id.toString();
 
-    const ensureUser = (userId) => {
         let db = getDB();
         db[userId] = sanitizeUserObject(db[userId]);
-        saveDB(db);
-        return db;
-    };
+        const p = db[userId];
 
-    const assignTask = (user) => {
-        const pool = [
-            { id: "hunt", desc: "Hunt 5 demons in the woods", target: 5 },
-            { id: "battle", desc: "Engage in 10 training battles", target: 10 },
-            { id: "work", desc: "Help Butterfly Mansion 5 times", target: 5 }
-        ];
-        const t = pool[Math.floor(Math.random() * pool.length)];
-        user.active_task = { ...t, progress: 0, completed: false };
-    };
-
-    // ==========================================
-    // 💮 1. /balance & /bal
-    // ==========================================
-    bot.onText(/\/(?:balance|bal)/, (msg) => {
-        const userId = msg.from.id.toString();
-        let db = ensureUser(userId);
-        let p = db[userId];
-
-        let totalSerums = 0;
-        let totalOres = parseInt(p.materials["universal_blessing"]) || 0;
-        if (isNaN(totalOres)) totalOres = 0;
-        
-        Object.keys(p.materials).forEach(key => {
-            if (key.endsWith('_essence')) {
-                let amt = parseInt(p.materials[key]) || 0;
-                totalSerums += isNaN(amt) ? 0 : amt;
-            }
-        });
-
-        const text = `💮 **SLAYER REGISTER | CORPS PASSPORT** 💮\n` +
-                     `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                     `👤 **User ID:** \`${userId}\`\n` +
-                     `📊 **Slayer Rank:** \`Level ${p.level}\` *(XP: ${p.exp})*\n` +
-                     `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                     `💰 **FINANCIAL LEDGER:**\n` +
-                     `🪙 **Crow Coins:** \`${p.coins.toLocaleString()}\`\n` +
-                     `💎 **Nichirin Crystals:** \`${p.crystals.toLocaleString()}\`\n` +
-                     `✨ **Mythic Tokens:** \`${p.mythic.toLocaleString()}\`\n\n` +
-                     `📦 **VAULT INVENTORY:**\n` +
-                     `🧪 **Specific Essences:** \`${totalSerums}\` units\n` +
-                     `⚔️ **Universal Blessings:** \`${totalOres}\` / 3 pieces\n\n` +
-                     `📖 *Usage:* \`/use <character>_essence\`\n` +
-                     `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-        bot.sendMessage(msg.chat.id, text, { parse_mode: "Markdown" });
+        const report = `💰 **SLAYER FINANCIAL REGISTRY**\n` +
+                       `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                       `• 🪙 **Crow Coins:** \`${p.coins.toLocaleString()}\` \n` +
+                       `• 💎 **Crystals:** \`${p.crystals.toLocaleString()}\` \n` +
+                       `• ✨ **Mythic Tokens:** \`${p.mythic.toLocaleString()}\` \n\n` +
+                       `💼 **Inventory Size:** \`${p.inventory.length}\` Cards loaded.\n` +
+                       `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+        bot.sendMessage(chatId, report, { parse_mode: "Markdown" });
     });
 
     // ==========================================
-    // 🦅 2. /task
+    // ⚒️ 2. /work (BASIC INCOME DRIVER)
+    // ==========================================
+    bot.onText(/\/work/, (msg) => {
+        const chatId = msg.chat.id;
+        const userId = msg.from.id.toString();
+        const now = Date.now();
+        const cooldown = 5 * 60 * 1000; // 5 mins cooldown
+
+        let db = getDB();
+        db[userId] = sanitizeUserObject(db[userId]);
+        let p = db[userId];
+
+        if (now - p.lastWork < cooldown) {
+            const remaining = Math.ceil((cooldown - (now - p.lastWork)) / 1000);
+            return bot.sendMessage(chatId, `⏳ **Exhaustion Alert!** Slayers need rest. Wait \`${remaining}s\` before your next patrol.`);
+        }
+
+        const payout = Math.floor(Math.random() * 80) + 50; // 50-130 Coins
+        p.coins += payout;
+        p.lastWork = now;
+
+        db[userId] = p;
+        saveDB(db);
+
+        bot.sendMessage(chatId, `🦅 **Patrol Successful!** You secured the area perimeter and earned 🪙 \`${payout}\` Crow Coins.`);
+    });
+
+    // ==========================================
+    // 📜 3. /task (DAILY CONTRACT AGENT)
     // ==========================================
     bot.onText(/\/task/, (msg) => {
+        const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
-        let db = ensureUser(userId);
-        let p = db[userId];
-        const today = new Date().toISOString().split('T')[0];
+        const now = Date.now();
+        const cooldown = 20 * 60 * 60 * 1000; // 20 hours daily lock
 
-        if (!p.active_task || p.last_daily !== today) {
-            assignTask(p);
-            p.last_daily = today;
-            saveDB(db);
+        let db = getDB();
+        db[userId] = sanitizeUserObject(db[userId]);
+        let p = db[userId];
+
+        if (now - p.lastTask < cooldown) {
+            const remHrs = Math.ceil((cooldown - (now - p.lastTask)) / (1000 * 60 * 60));
+            return bot.sendMessage(chatId, `📜 **Demon Crest Locked!** Next official rank orders arrive in \`${remHrs} hours\`.`);
         }
 
-        const t = p.active_task;
-        const status = t.completed ? "🟢 SUCCESS (Claimed)" : "🚨 ACTIVE (In Progress)";
-        const text = `🦅 **KASUGAI CROW | DAILY DIRECTIVE** 🦅\n` +
-                     `*“CAW! New orders from headquarters! CAW!”*\n` +
-                     `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                     `📜 **MISSION:** \`${t.desc}\`\n` +
-                     `📡 **STATUS:** ${status}\n` +
-                     `📊 **TRACKING:** \`[ ${t.progress} / ${t.target} ]\`\n\n` +
-                     `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                     `🎁 **COMPLETION REWARDS:**\n` +
-                     `✨ \`+20 Mythic Tokens\` | 📈 \`+50 Training XP\``;
+        const coinReward = 200;
+        const crystalReward = 2;
 
-        bot.sendMessage(msg.chat.id, text, { parse_mode: "Markdown" });
+        p.coins += coinReward;
+        p.crystals += crystalReward;
+        p.lastTask = now;
+
+        db[userId] = p;
+        saveDB(db);
+
+        bot.sendMessage(chatId, `📜 **MISSION COMPLETION NOTICE**\n━━━━━━━━━━━━━━━━━━━━━\nRank mission achieved! Received:\n• 🪙 \`${coinReward}\` Coins\n• 💎 \`${crystalReward}\` Crystals\n━━━━━━━━━━━━━━━━━━━━━\nYour accounts are fully synchronized.`);
     });
 
     // ==========================================
-    // 🔄 3. /convert
+    // 🔀 4. /convert (EXCHANGE RATE MANAGER)
     // ==========================================
-    bot.onText(/\/convert (.+) (.+)/, (msg, match) => {
+    bot.onText(/\/convert\s*(\w*)\s*(\d*)/, (msg, match) => {
+        const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
-        let db = ensureUser(userId);
+
+        let db = getDB();
+        db[userId] = sanitizeUserObject(db[userId]);
         let p = db[userId];
-        const type = match[1].toLowerCase();
+
+        const direction = match[1] ? match[1].toLowerCase() : "";
         const amount = parseInt(match[2], 10);
 
-        if (isNaN(amount) || amount <= 0) {
-            return bot.sendMessage(msg.chat.id, "❌ **Forger Error:** Invalid trade value params.");
+        if (!direction || !amount || amount <= 0) {
+            return bot.sendMessage(chatId, `❌ **Syntax: \`/convert c2cr <amount>\`**\nRate: \`100 Coins\` -> \`1 Crystal\``);
         }
 
-        if (type === "c2cr") { 
+        if (direction === "c2cr") {
             const cost = amount * 100;
-            if (p.coins < cost) return bot.sendMessage(msg.chat.id, `❌ Not enough Crow Coins. Need 🪙 ${cost.toLocaleString()}`);
+            if (p.coins < cost) {
+                return bot.sendMessage(chatId, `❌ **Insufficent Funds!** Exchange requires 🪙 \`${cost}\` Coins for \`${amount}\` Crystals.`);
+            }
             p.coins -= cost;
             p.crystals += amount;
-            bot.sendMessage(msg.chat.id, `🔄 **TRADE SUCCESSFUL** 🔄\n━━━━━━━━━━━━━━━━━━━━\nSpent: 🪙 \`${cost.toLocaleString()} Coins\`\nObtained: 💎 \`${amount.toLocaleString()} Nichirin Crystals\`\n━━━━━━━━━━━━━━━━━━━━`);
-        } else if (type === "cr2mt") { 
-            const cost = amount * 100;
-            if (p.crystals < cost) return bot.sendMessage(msg.chat.id, `❌ Not enough Crystals. Need 💎 ${cost.toLocaleString()}`);
-            p.crystals -= cost;
-            p.mythic += amount;
-            bot.sendMessage(msg.chat.id, `🔄 **TRADE SUCCESSFUL** 🔄\n━━━━━━━━━━━━━━━━━━━━\nSpent: 💎 \`${cost.toLocaleString()} Crystals\`\nObtained: ✨ \`${amount.toLocaleString()} Mythic Tokens\`\n━━━━━━━━━━━━━━━━━━━━`);
+
+            db[userId] = p;
+            saveDB(db);
+
+            bot.sendMessage(chatId, `✅ **Vault Transaction Certified!** Converted 🪙 \`${cost}\` Coins into 💎 \`${amount}\` Crystals.`);
         } else {
-            return bot.sendMessage(msg.chat.id, "❌ **Invalid Trade Route!** Use \`c2cr\` (Coins to Crystals) or \`cr2mt\` (Crystals to Tokens).");
+            bot.sendMessage(chatId, "❌ **Unknown Exchange Formula!** Valid operations: `c2cr` (Coins to Crystals).");
         }
-        saveDB(db);
     });
 
     // ==========================================
-    // 🏮 4. /spin (ADVANCED MULTI-TIER ENGINE)
+    // 🏮 5. /spin (TWO-STEP BUTTON KEYBOARD SYSTEM)
     // ==========================================
-    bot.onText(/\/spin\s*(\w*)\s*(\d*)/, async (msg, match) => {
+    bot.onText(/\/spin(?:\s+(\w+))?(?:\s+(\d+))?/, async (msg, match) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         
@@ -170,8 +186,44 @@ module.exports = (bot) => {
         db[userId] = sanitizeUserObject(db[userId]);
         let p = db[userId];
 
-        const mode = match[1] ? match[1].toLowerCase() : "normal";
-        const count = match[2] ? parseInt(match[2], 10) : 1;
+        // STEP 1: Agar sirf /spin likha ho -> Category Setup UI bhejo
+        if (!match[1]) {
+            const platformMenu = {
+                reply_markup: JSON.stringify({
+                    inline_keyboard: [
+                        [
+                            { text: "🪙 Normal Platform", callback_data: `select_platform:normal` },
+                            { text: "✨ Mythic Platform", callback_data: `select_platform:character` }
+                        ],
+                        [
+                            { text: "💎 Material Platform", callback_data: `select_platform:material` }
+                        ]
+                    ]
+                }),
+                parse_mode: "Markdown"
+            };
+
+            return bot.sendMessage(chatId, 
+                `🎰 **NICHIRIN FORGE | SELECTION PORTAL**\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Slayer, choose your extraction platform to unlock bundles:\n\n` +
+                `🪙 **Coins:** \`${p.coins.toLocaleString()}\` | ✨ **Tokens:** \`${p.mythic.toLocaleString()}\` | 💎 **Crystals:** \`${p.crystals.toLocaleString()}\`\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━`, 
+                platformMenu
+            );
+        }
+
+        // Backup Manual Text Parser System (/spin normal 10)
+        await executeSpinLogic(chatId, userId, match[1].toLowerCase(), match[2] ? parseInt(match[2], 10) : 1);
+    });
+
+    // ==========================================
+    // ⚡ CENTRAL PHYSICS SPIN EXECUTION ENGINE
+    // ==========================================
+    async function executeSpinLogic(chatId, userId, mode, count) {
+        let db = getDB();
+        db[userId] = sanitizeUserObject(db[userId]);
+        let p = db[userId];
 
         let cost = 0;
         let rolls = count;
@@ -203,7 +255,7 @@ module.exports = (bot) => {
             else if (count === 50) cost = 2500;
             else return bot.sendMessage(chatId, "❌ **Invalid Material compilation parameters!** Options: 1, 5, 10, 50.");
         } else {
-            return bot.sendMessage(chatId, "❌ **Unknown Tier selection!** Use `/spin normal`, `/spin character`, or `/spin material` followed by count.");
+            return bot.sendMessage(chatId, "❌ **Unknown Tier selection!** Use `/spin normal`, `/spin character`, or `/spin material`.");
         }
 
         if (p[currencyKey] < cost) {
@@ -211,7 +263,7 @@ module.exports = (bot) => {
         }
 
         let lootEarned = [];
-        const normalNames = Array.isArray(normalCards) ? normalCards.map(c => c.name) : Object.keys(normalCards || {});
+        const normalNames = Array.isArray(normalCards) ? normalCards.map(c => c.name) : [];
         const mythicObjects = Array.isArray(mythicCards) ? mythicCards : [];
 
         for (let i = 0; i < rolls; i++) {
@@ -228,18 +280,39 @@ module.exports = (bot) => {
             } 
             else if (mode === "character") {
                 const randChance = Math.random() * 100;
+                let droppedCharName = "";
+                let droppedCharId = "";
+
                 if (randChance < 3.0 && mythicObjects.length > 0) { 
                     const muzan = mythicObjects.find(c => c.id.includes("muzan")) || mythicObjects[mythicObjects.length - 1];
-                    p.inventory.push(muzan.name);
-                    lootEarned.push(`🔥 [MYTHICAL ULTIMATE] ${muzan.name}`);
+                    droppedCharName = muzan.name;
+                    droppedCharId = muzan.id.split('_')[0]; 
+                    lootEarned.push(`🔥 [MYTHICAL] ${droppedCharName}`);
                 } else if (randChance < 15.0 && mythicObjects.length > 0) {
                     const luckyMythic = mythicObjects[Math.floor(Math.random() * mythicObjects.length)];
-                    p.inventory.push(luckyMythic.name);
-                    lootEarned.push(`✨ [MYTHICAL LIMITED] ${luckyMythic.name}`);
+                    droppedCharName = luckyMythic.name;
+                    droppedCharId = luckyMythic.id.split('_')[0];
+                    lootEarned.push(`✨ [LIMITED] ${droppedCharName}`);
                 } else {
                     const normalFallback = normalNames[Math.floor(Math.random() * normalNames.length)] || "Elite Recruit";
-                    p.inventory.push(normalFallback);
-                    lootEarned.push(`🃏 Normal Card: ${normalFallback}`);
+                    droppedCharName = normalFallback;
+                    droppedCharId = normalFallback.toLowerCase().replace(/\s+/g, '');
+                    lootEarned.push(`🃏 Card: ${droppedCharName}`);
+                }
+
+                // 🔄 DUPLICATE UPGRADE TO ESSENCE SYSTEM
+                let hasDuplicate = p.inventory.some(item => {
+                    if (typeof item === "string") return item.toLowerCase() === droppedCharName.toLowerCase();
+                    return item.name && item.name.toLowerCase() === droppedCharName.toLowerCase();
+                });
+
+                if (hasDuplicate) {
+                    const essenceKey = `${droppedCharId}_essence`;
+                    let curEssence = parseInt(p.materials[essenceKey]) || 0;
+                    p.materials[essenceKey] = curEssence + 1;
+                    lootEarned[lootEarned.length - 1] += ` 🔄 (Duplicate -> Converted to +1 ${essenceKey.toUpperCase()})`;
+                } else {
+                    p.inventory.push(droppedCharName);
                 }
             } 
             else if (mode === "material") {
@@ -259,11 +332,12 @@ module.exports = (bot) => {
             }
         }
 
+        // Deduct operational cost
         p[currencyKey] = (parseInt(p[currencyKey]) || 0) - cost;
-        db[userId] = sanitizeUserObject(p); // Re-verification hard lock block before saving
+        db[userId] = sanitizeUserObject(p); 
         saveDB(db);
 
-        const processingMsg = await bot.sendMessage(chatId, `🎰 **NICHIRIN FORGE SLOTS | MODE: ${mode.toUpperCase()}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 Bellows roaring, finalizing matrix configurations...\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
+        const processingMsg = await bot.sendMessage(chatId, `🎰 **NICHIRIN FORGE SLOTS | MODE: ${mode.toUpperCase()}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 Processing templates and structural state updates...\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
 
         const reportSummary = lootEarned.map(item => `• ${item}`).join('\n');
         let finalOutput = `🎰 **FORGE DROP REPORT | PROCESS COMPLETION**\n` +
@@ -278,147 +352,90 @@ module.exports = (bot) => {
             message_id: processingMsg.message_id,
             parse_mode: "Markdown"
         }).catch(() => {});
-    });
+    }
 
     // ==========================================
-    // 🧪 5. /use (INTELLIGENT SELECTION ARCHETYPE)
+    // 🎛️ BUTTONS TEXT INTERCEPTOR INTERACTION
     // ==========================================
-    bot.onText(/\/use\s*(.+)/, (msg, match) => {
-        const chatId = msg.chat.id;
-        const userId = msg.from.id.toString();
-        let db = ensureUser(userId);
-        const itemRequested = match[1].trim().toLowerCase();
-
-        if (!db[userId].materials[itemRequested] || parseInt(db[userId].materials[itemRequested]) < 1) {
-            return bot.sendMessage(chatId, `❌ **Vault Discrepancy!** You don't possess any units of \`${itemRequested}\` inside storage blueprints.`);
-        }
-
-        if (!itemRequested.endsWith('_essence')) {
-            return bot.sendMessage(chatId, "❌ **Execution Halted:** `/use` pipeline accepts character-specific essences only!");
-        }
-
-        const characterReference = itemRequested.split('_')[0]; 
-
-        const interfaceOptions = {
-            reply_markup: JSON.stringify({
-                inline_keyboard: [
-                    [
-                        { text: "🟢 Normal Form Upgrade", callback_data: `use_essence:${characterReference}:${itemRequested}:normal` },
-                        { text: "🔴 Mythical Form Upgrade", callback_data: `use_essence:${characterReference}:${itemRequested}:mythical` }
-                    ]
-                ]
-            }),
-            parse_mode: "Markdown"
-        };
-
-        bot.sendMessage(chatId, `🧪 **ESSENCE EXTRACTION DEPLOYMENT ENGINE**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nDetected: \`${itemRequested.toUpperCase()}\` blueprint item.\n\nChoose target matrix formulation platform below:`, interfaceOptions);
-    });
-
-    // Inline Button Processing Callbacks Matrix Interceptor
     bot.on("callback_query", async (query) => {
-        const dataPayload = query.data;
-        if (!dataPayload.startsWith("use_essence:")) return;
-
-        const [_, charRef, targetEssence, chosenTier] = dataPayload.split(":");
-        const userId = query.from.id.toString();
         const chatId = query.message.chat.id;
+        const userId = query.from.id.toString();
+        const dataPayload = query.data;
 
-        let db = getDB();
-        db[userId] = sanitizeUserObject(db[userId]);
-        let p = db[userId];
+        // INTERCEPTOR 1: Multi-spin Menu open on Platform Selection
+        if (dataPayload.startsWith("select_platform:")) {
+            const targetPlatform = dataPayload.split(":")[1];
+            
+            let title = "";
+            let baseAsset = "";
+            let rate1 = 0, rate5 = 0;
 
-        let essenceCount = parseInt(p.materials[targetEssence]) || 0;
-        if (essenceCount < 1) {
-            return bot.answerCallbackQuery(query.id, { text: "Bhai, item nahi mil raha vault mein!", show_alert: true });
-        }
-
-        let ownedInventoryIndex = p.inventory.findIndex(item => {
-            if (typeof item === "string") return item.toLowerCase().includes(charRef);
-            return item.name && item.name.toLowerCase().includes(charRef);
-        });
-        
-        if (ownedInventoryIndex === -1) {
-            return bot.answerCallbackQuery(query.id, { text: `Bhai, pehle ${charRef.toUpperCase()} ka card acquire karo inventory mein!`, show_alert: true });
-        }
-
-        p.materials[targetEssence] = essenceCount - 1;
-        if (p.materials[targetEssence] <= 0) delete p.materials[targetEssence];
-
-        let gainedXp = chosenTier === "mythical" ? 50 : 100; 
-        let gainedPower = chosenTier === "mythical" ? 150 : 50;
-        let boundaryXpCap = chosenTier === "mythical" ? 500 : 100;
-
-        if (typeof p.inventory[ownedInventoryIndex] === "string") {
-            p.inventory[ownedInventoryIndex] = {
-                name: p.inventory[ownedInventoryIndex],
-                level: 1,
-                xp: 0,
-                power: chosenTier === "mythical" ? 7000 : 1200
-            };
-        }
-
-        let card = p.inventory[ownedInventoryIndex];
-        card.level = isNaN(parseInt(card.level)) ? 1 : parseInt(card.level);
-        card.xp = isNaN(parseInt(card.xp)) ? 0 : parseInt(card.xp);
-        card.power = isNaN(parseInt(card.power)) ? 1000 : parseInt(card.power);
-
-        card.xp += gainedXp;
-        card.power += gainedPower;
-
-        let leveledUp = false;
-        if (card.xp >= boundaryXpCap) {
-            card.xp -= boundaryXpCap;
-            card.level += 1;
-            card.power += chosenTier === "mythical" ? 300 : 75; 
-            leveledUp = true;
-        }
-
-        db[userId] = sanitizeUserObject(p);
-        saveDB(db);
-        await bot.answerCallbackQuery(query.id, { text: "Cultivation sequence processed and saved safely!" });
-
-        let reportMessage = `🧪 **ESSENCE PROCESSING SEQUENCE COMPLETION**\n` +
-                            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                            `✅ Target item consumed: \`${targetEssence.toUpperCase()}\`\n` +
-                            `🎯 Target profile type: \`${chosenTier.toUpperCase()} Format\`\n\n` +
-                            `📈 **STATISTICAL MODIFICATIONS ADJUSTMENT:**\n` +
-                            `• Raw Combat Power: \`+${gainedPower}\` *(Total: ${card.power})*\n` +
-                            `• Synthesized Base XP: \`+${gainedXp}\` *(${card.xp}/${boundaryXpCap})*\n`;
-
-        if (leveledUp) {
-            reportMessage += `\n🎉 **ASCENSION DETECTED!** Card advanced smoothly up to **Level ${card.level}**!`;
-        }
-        reportMessage += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-
-        bot.editMessageText(reportMessage, {
-            chat_id: chatId,
-            message_id: query.message.message_id,
-            parse_mode: "Markdown"
-        }).catch(() => {});
-    });
-
-    // ==========================================
-    // 💼 6. /work
-    // ==========================================
-    bot.onText(/\/work/, (msg) => {
-        const userId = msg.from.id.toString();
-        let db = ensureUser(userId);
-        let p = db[userId];
-        
-        const earnings = 200;
-        p.coins = (parseInt(p.coins) || 0) + earnings;
-        
-        if (p.active_task && p.active_task.id === "work" && !p.active_task.completed) {
-            p.active_task.progress = (parseInt(p.active_task.progress) || 0) + 1;
-            if (p.active_task.progress >= p.active_task.target) {
-                p.active_task.completed = true;
-                p.mythic = (parseInt(p.mythic) || 0) + 20; 
-                p.exp = (parseInt(p.exp) || 0) + 50;
-                bot.sendMessage(msg.chat.id, "🦅 *“CAW! Mission Complete!”* — Added \`+20 Mythic Tokens\` & \`+50 Training XP\`!");
+            if (targetPlatform === "normal") {
+                title = "🪙 NORMAL SPIN BUNDLES";
+                baseAsset = "Coins";
+                rate1 = 25; rate5 = 250;
+            } else if (targetPlatform === "character") {
+                title = "✨ MYTHIC SPIN BUNDLES";
+                baseAsset = "Tokens";
+                rate1 = 1500; rate5 = 7500;
+            } else if (targetPlatform === "material") {
+                title = "💎 MATERIAL SPIN BUNDLES";
+                baseAsset = "Crystals";
+                rate1 = 50; rate5 = 250;
             }
+
+            let keyboardRows = [];
+            if (targetPlatform === "character") {
+                // Mythic contains only 1x and 5x bundles
+                keyboardRows.push([
+                    { text: `🎰 1x Spin (${rate1} ${baseAsset})`, callback_data: `btn_spin:character:1` },
+                    { text: `🔥 5x Spin (${rate5} ${baseAsset})`, callback_data: `btn_spin:character:5` }
+                ]);
+            } else {
+                // Normal and Materials get full ranges (1x, 5x, 10x, 50x)
+                keyboardRows.push([
+                    { text: `🎰 1x`, callback_data: `btn_spin:${targetPlatform}:1` },
+                    { text: `🚀 5x`, callback_data: `btn_spin:${targetPlatform}:5` }
+                ]);
+                keyboardRows.push([
+                    { text: `💥 10x (+1 Free Bonus!)`, callback_data: `btn_spin:${targetPlatform}:10` },
+                    { text: `👑 50x Mega Box`, callback_data: `btn_spin:${targetPlatform}:50` }
+                ]);
+            }
+            keyboardRows.push([{ text: "⬅️ Back to Main Menu", callback_data: "spin_back_main" }]);
+
+            await bot.editMessageText(
+                `🎰 **${title}**\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Select your desired bundle multiplier depth:\n` +
+                `• *10x multi-spins add +1 Free Roll inside execution loop!*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━`, 
+                {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    reply_markup: JSON.stringify({ inline_keyboard: keyboardRows }),
+                    parse_mode: "Markdown"
+                }
+            ).catch(() => {});
+            
+            return bot.answerCallbackQuery(query.id);
         }
-        
-        saveDB(db);
-        bot.sendMessage(msg.chat.id, `💼 **Patrol Complete!** Helped the village and earned \`${earnings} Crow Coins\`.`);
+
+        // INTERCEPTOR 2: Execution Roll Launcher
+        if (dataPayload.startsWith("btn_spin:")) {
+            const [_, targetMode, countVal] = dataPayload.split(":");
+            const runCount = parseInt(countVal, 10) || 1;
+            
+            bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+            await executeSpinLogic(chatId, userId, targetMode, runCount);
+            return bot.answerCallbackQuery(query.id);
+        }
+
+        // INTERCEPTOR 3: Back Reset Trigger
+        if (dataPayload === "spin_back_main") {
+            bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+            bot.processUpdate({ message: { chat: { id: chatId }, from: { id: userId }, text: "/spin" } });
+            return bot.answerCallbackQuery(query.id);
+        }
     });
 };
