@@ -1,8 +1,12 @@
-console.log("💰 ECONOMY ENGINE v2.5 [FULL INTEGRATION - PREMIUM SPIN]");
+console.log("💰 ECONOMY ENGINE v2.6 [FULL SLAYER METRICS & SPIN DROPS INTEGRATED]");
 
 const fs = require("fs");
 const path = require("path");
 const playerFile = path.join(process.cwd(), "data", "players.json");
+
+// Dynamic items allocation pool for spinning rewards mapping
+const { characters: normalCards } = require("../asset/assets.js");
+const { mythical: mythicCards } = require("../asset/mythical.js");
 
 const getDB = () => {
     try {
@@ -26,9 +30,15 @@ module.exports = (bot) => {
         if (!db[userId]) {
             db[userId] = { 
                 coins: 500, crystals: 0, mythic: 0, exp: 0, level: 1, 
-                last_daily: "", active_task: null 
+                last_daily: "", active_task: null,
+                inventory: [],
+                materials: [] // 🧪 Wisteria Serum & ⚔️ Nichirin Ore storage grid matrix
             };
             saveDB(db);
+        } else {
+            // Hot-patch layer for old accounts initialization parameters
+            if (!db[userId].materials) db[userId].materials = [];
+            if (!db[userId].inventory) db[userId].inventory = [];
         }
         return db;
     };
@@ -50,7 +60,7 @@ module.exports = (bot) => {
         const userId = msg.from.id.toString();
         let db = ensureUser(userId);
         let p = db[userId];
-        const text = `💠 **VELIX OS | PROFILE** 💠\n━━━━━━━━━━━━━━━━━━━━\n💰 **Coins:** \`${Number(p.coins).toLocaleString()}\`\n💎 **Crystals:** \`${Number(p.crystals).toLocaleString()}\`\n✨ **Mythic Tokens:** \`${Number(p.mythic).toLocaleString()}\`\n📊 **Level:** ${p.level} (XP: ${p.exp})\n━━━━━━━━━━━━━━━━━━━━`;
+        const text = `💠 **VELIX OS | SLAYER CORPS PROFILE** 💠\n━━━━━━━━━━━━━━━━━━━━\n💰 **Coins:** \`${Number(p.coins).toLocaleString()}\`\n💎 **Crystals:** \`${Number(p.crystals).toLocaleString()}\`\n✨ **Mythic Tokens:** \`${Number(p.mythic).toLocaleString()}\`\n📊 **Slayer Level:** ${p.level} (XP: ${p.exp})\n📦 **Vault Materials:** \`${p.materials.length}\` items (\`/essence\` or \`/blessing\` to check)\n━━━━━━━━━━━━━━━━━━━━`;
         bot.sendMessage(msg.chat.id, text, { parse_mode: "Markdown" });
     });
 
@@ -107,7 +117,7 @@ module.exports = (bot) => {
     });
 
     // ==========================================
-    // 4. SPIN (LUCKY DRAW - PREMIUM ANIMATED)
+    // 4. SPIN (SLAYER LUCKY SLOTS DROP MECHANICS)
     // ==========================================
     bot.onText(/\/spin/, async (msg) => {
         const chatId = msg.chat.id;
@@ -119,7 +129,6 @@ module.exports = (bot) => {
         const TOKEN_COST = 5;
         let paymentMethod = "";
 
-        // Determine payment priority: Coins first, then Tokens
         if (p.coins >= COIN_COST) {
             p.coins -= COIN_COST;
             paymentMethod = `🪙 -${COIN_COST} Coins`;
@@ -130,19 +139,16 @@ module.exports = (bot) => {
             return bot.sendMessage(chatId, `❌ **Insufficient Funds!**\n\nNeed 🪙 ${COIN_COST} Coins or ✨ ${TOKEN_COST} Mythic Tokens to spin!`, { parse_mode: "Markdown" });
         }
 
-        // Commit transaction state to stop glitchers
         saveDB(db);
 
-        // Frame 1: Roll Starts
-        const rollingMsg = await bot.sendMessage(chatId, `🎰 **VELIX SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ 🟦 | 🟦 | 🟦 ] **Rerolling arrays...**\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`);
+        const rollingMsg = await bot.sendMessage(chatId, `🎰 **CORPS SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ 🟦 | 🟦 | 🟦 ] **Rerolling arrays...**\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`);
 
         const matrixFrames = [
-            `🎰 **VELIX SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ 🍒 | 💎 | 💰 ] *Engine computing logic...*\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`,
-            `🎰 **VELIX SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ 👑 | 👑 | 🍒 ] *Syncing database layers...*\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`,
-            `🎰 **VELIX SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ 💎 | 🔮 | 💎 ] *Jackpot calculations near...*\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`
+            `🎰 **CORPS SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ 🧪 | ⚔️ | 🪙 ] *Sifting supply files...*\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`,
+            `🎰 **CORPS SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ 💎 | 💎 | 🧪 ] *Calibrating drop matrix...*\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`,
+            `🎰 **CORPS SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n🔄 [ ⚔️ | 👑 | 💎 ] *Assembling components...*\n━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`
         ];
 
-        // Animate rolling effect via intervals
         for (let i = 0; i < matrixFrames.length; i++) {
             await new Promise(resolve => setTimeout(resolve, 750));
             await bot.editMessageText(matrixFrames[i], {
@@ -152,14 +158,13 @@ module.exports = (bot) => {
             }).catch(() => {});
         }
 
-        // Mathematical drop matrix execution
         const rollValue = Math.random() * 100;
         let slotDisplay = "";
         let rewardTitle = "";
         let rewardText = "";
 
         if (rollValue < 2) { 
-            // 2% Mythic Jackpot: 25 Mythic Tokens
+            // 2% Mythic Jackpot: 25 Tokens
             const amt = 25;
             p.mythic = Number(p.mythic || 0) + amt;
             slotDisplay = "👑 | 👑 | 👑";
@@ -178,29 +183,46 @@ module.exports = (bot) => {
             // 28% Big Coins Return: 3,000 Coins
             const amt = 3000;
             p.coins += amt;
-            slotDisplay = "💰 | 💰 | 🍒";
+            slotDisplay = "🪙 | 🪙 | 🧪";
             rewardTitle = "🪙 MASSIVE COINS RETURN 🪙";
             rewardText = `💵 You won **${amt.toLocaleString()} Coins**!`;
         } 
         else if (rollValue < 75) { 
-            // 35% Weapon/Card Drop (Retained from your original drop)
-            const prize = Math.random() < 0.6 ? "Basic Weapon 🗡️" : "Common Card 🃏";
-            slotDisplay = "🃏 | 🗡️ | 🍒";
-            rewardTitle = "🃏 INVENTORY DROP 🃏";
-            rewardText = `📦 You won **${prize}**!\n*(Item successfully added to drop queue)*`;
+            // 35% DEMON SLAYER SPECIFIC REWARD MATRIX GENERATION
+            const normalKeys = Object.keys(normalCards || {});
+            const mythicKeys = Object.keys(mythicCards || {});
+            const combinedKeys = [...new Set([...normalKeys, ...mythicKeys])];
+            const randomChar = combinedKeys[Math.floor(Math.random() * combinedKeys.length)] || "tanjiro";
+
+            if (Math.random() < 0.6) {
+                // 60% of inventory drops -> Wisteria Serum (Level item)
+                const rType = Math.random() < 0.25 ? "mythic" : "normal";
+                const itemId = `${randomChar}_${rType}_essence`;
+                p.materials.push(itemId);
+                
+                slotDisplay = "🧪 | 🧪 | 📦";
+                rewardTitle = "🧪 VAULT DROPS: WISTERIA SERUM 🧪";
+                rewardText = `📦 Crafted specific **${randomChar.toUpperCase()} [${rType.toUpperCase()}] Wisteria Serum**! Added directly to materials block stack register. Check with \`/essence ${randomChar}\`.`;
+            } else {
+                // 40% of inventory drops -> Nichirin Ore (Awakening item)
+                const rType = Math.random() < 0.25 ? "mythic" : "normal";
+                const itemId = `${randomChar}_${rType}_blessing`;
+                p.materials.push(itemId);
+
+                slotDisplay = "⚔️ | ⚔️ | 📦";
+                rewardTitle = "⚔️ SMITHY DROPS: NICHIRIN ORE ⚔️";
+                rewardText = `📦 Salvaged specific **${randomChar.toUpperCase()} [${rType.toUpperCase()}] Nichirin Ore**! Added to blacksmith storage block queue. Check with \`/blessing ${randomChar}\`.`;
+            }
         }
         else { 
-            // 25% Dead Drop zone
-            slotDisplay = "💀 | ❌ | 💩";
+            slotDisplay = "💀 | ❌ | 🪵";
             rewardTitle = "💥 STRUCTURAL DEAD DROP 💥";
-            rewardText = "Better luck next time! The slot arrays dropped blank parameters.";
+            rewardText = "Better luck next time! The breathing forms lapsed and arrays dropped empty values.";
         }
 
-        // Write final prize outputs safely back to json
         saveDB(db);
 
-        // Render Ultimate UI frame
-        let finalLayout = `🎰 **VELIX SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n✨ [ ${slotDisplay} ] ✨\n━━━━━━━━━━━━━━━━━━━━\n\n` +
+        let finalLayout = `🎰 **CORPS SLOTS ARCHITECTURE**\n━━━━━━━━━━━━━━━━━━━━\n✨ [ ${slotDisplay} ] ✨\n━━━━━━━━━━━━━━━━━━━━\n\n` +
                           `⚡ **${rewardTitle}**\n\n${rewardText}\n\n` +
                           `📊 **Updated Vault Ledger:**\n` +
                           `• 🪙 Balance: \`${p.coins.toLocaleString()}\`\n` +
@@ -225,7 +247,6 @@ module.exports = (bot) => {
         const earnings = 200;
         p.coins += earnings;
         
-        // Task Update Logic
         if (p.active_task && p.active_task.id === "work" && !p.active_task.completed) {
             p.active_task.progress += 1;
             if (p.active_task.progress >= p.active_task.target) {
