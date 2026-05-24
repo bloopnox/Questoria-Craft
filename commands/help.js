@@ -1,20 +1,20 @@
-console.log("✅ RPG HELP CENTER FILE LOADED (VELIX OS V2.5 INTEGRATION)");
+console.log("✅ VELIX OS | DEMON SLAYER HELP COURIER [UI v2.6 - COMPLETE HUB]");
 
 module.exports = (bot) => {
 
-  // =========================
-  // HELP COMMAND
-  // =========================
+  // ==========================================
+  // 💮 MAIN HELP HUB DIAL
+  // ==========================================
   bot.onText(/\/help/, (msg) => {
     const chatId = msg.chat.id;
 
     const image = "https://i.pinimg.com/1200x/5e/3d/77/5e3d77131f4866906087659fddc0ff3c.jpg"; 
 
-    const caption = `
-📘 *RPG HELP CENTER*
-
-⚡ Select category below 👇
-    `;
+    const caption = `💮 **DEMON SLAYER CORPS | ARCHIVE HUB** 💮\n` +
+                    `*“Welcome, recruit. Tap the scrolls below to interface with the headquarters mainframe protocols.”*\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                    `📜 **SELECT A SYSTEM DIRECTIVE Below** 👇\n` +
+                    `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
     bot.sendPhoto(chatId, image, {
       caption: caption,
@@ -22,98 +22,115 @@ module.exports = (bot) => {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: "🏰 Guild System", callback_data: "help_guild" },
-            { text: "💰 Economy System", callback_data: "help_economy" }
+            { text: "🏰 Faction Guilds", callback_data: "help_guild" },
+            { text: "🪙 Forge Economy", callback_data: "help_economy" }
           ],
           [
-            { text: "👤 Profile System", callback_data: "help_profile" },
-            { text: "⚔️ Battle System", callback_data: "help_battle" }
+            { text: "👤 Slayer Profile", callback_data: "help_profile" },
+            { text: "⚔️ Breath Combat", callback_data: "help_battle" }
           ],
           [
-            { text: "📘 Guide & Tasks", callback_data: "help_guide" },
-            { text: "🏆 Leaderboard", callback_data: "help_lb" }
+            { text: "🦅 Crow Directives", callback_data: "help_guide" },
+            { text: "🏆 Pillar Rankings", callback_data: "help_lb" }
           ],
           [
-            { text: "🌐 Full Docs", url: "https://example.com/rpg-bot-docs" }
+            { text: "🌐 Master Strategy Docs", url: "https://example.com/rpg-bot-docs" }
           ]
         ]
       }
     });
   });
 
-  // =========================
-  // BUTTON HANDLER
-  // =========================
+  // ==========================================
+  // 💮 SUB-SYSTEM PANEL RECEIVER
+  // ==========================================
   bot.on("callback_query", (q) => {
     const chatId = q.message.chat.id;
     const data = q.data;
 
-    // Safety guard: Agar data help_ se start nahi hota, toh control return kar do
     if (!data.startsWith("help_")) return;
 
     let text = "";
 
     if (data === "help_guild") {
-      text = `🏰 **GUILD SYSTEM**
-
-• \`/createguild <name>\` → Create your faction
-• \`/joinguild <name>\` → Join an active guild
-• \`/myguild\` → Check your guild status
-• \`/guildvault <amount>\` → Deposit coins to guild vault
-• \`/guildrewards\` → Check weekly glory milestones
-• \`/claimguildrewards\` → Claim your unlocked milestones!
-• \`/guildlb\` → Rank of top guild vaults`;
+      text = `🏰 **GUILD SYSTEM | FACTION LABELS** 🏰\n` +
+             `*Form your clan or align with existing cells to unlock group milestones.*\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+             `📜 **SLAYER OPERATIONS:**\n` +
+             `├─ \`/createguild <name>\` ➜ Found your own custom faction\n` +
+             `├─ \`/joinguild <name>\` ➜ Enlist in an active user alliance\n` +
+             `├─ \`/myguild\` ➜ Check alignment, rosters, and vault metrics\n` +
+             `├─ \`/guildvault <amt>\` ➜ Tribute Crow Coins to the group treasury\n` +
+             `├─ \`/guildrewards\` ➜ Inspect current weekly glory milestones\n` +
+             `├─ \`/claimguildrewards\` ➜ Harvest unlocked treasury matrices\n` +
+             `└─ \`/guildlb\` ➜ Rank factions sorted by vault capacity\n\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     }
 
     if (data === "help_economy") {
-      text = `💰 **ECONOMY & CONVERTER SYSTEM**
-
-• \`/balance\` / \`/bal\` → Check Coins, Crystals, and Mythic Tokens
-• \`/work\` → Work hard for cash resources & progress tasks
-• \`/spin\` → Lucky Draw (Cost: 1200 Coins or 5 Mythic Tokens)
-• \`/dep <amount/all>\` → Shift cash into your bank vault
-• \`/with <amount/all>\` → Withdraw cash back to wallet
-
-🔄 **CONVERTER ENGINE**
-• \`/convert c2cr <amount>\` → 100 Coins ➡️ 1 Crystal
-• \`/convert cr2mt <amount>\` → 100 Crystals ➡️ 1 Mythic Token`;
+      text = `🪙 **ECONOMY & METALLURGY SYSTEM** 🪙\n` +
+             `*Manage your funds and forge parameters inside the Corps vaults.*\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+             `💰 **FINANCIAL REGISTERS:**\n` +
+             `├─ \`/balance\` / \`/bal\` ➜ Verify Crow Coins, Crystals & Tokens\n` +
+             `├─ \`/work\` ➜ Complete Butterfly Mansion shifts for cash assets\n` +
+             `├─ \`/spin\` ➜ Engage Nichirin Slots (Cost: \`1200 Coins\` / \`5 Tokens\`)\n` +
+             `├─ \`/dep <amt/all>\` ➜ Move pocket cash secure into your bank storage\n` +
+             `├─ \`/with <amt/all>\` ➜ Extract emergency liquidity back to wallet\n` +
+             `├─ \`/essence <name>\` ➜ View character specific Wisteria Serum stock\n` +
+             `└─ \`/blessing <name>\` ➜ View character specific Nichirin Ore stock\n\n` +
+             `🔄 **FORGER CONVERT CORE:**\n` +
+             `├─ \`/convert c2cr <amt>\` ➜ \`100 Coins\` ➡️ \`1 Nichirin Crystal\`\n` +
+             `└─ \`/convert cr2mt <amt>\` ➜ \`100 Crystals\` ➡️ \`1 Mythic Essence\`\n\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     }
 
     if (data === "help_profile") {
-      text = `👤 **PROFILE SYSTEM**
-
-• \`/profile\` → View stats, live XP, level, rank & character card
-• \`/inventory\` → Inspect your collection items
-• \`/char\` → Lists all available database cards
-• \`/char <name/id>\` → Search characters with separation
-• \`/equip\` → Equip weapons & accessories`;
+      text = `👤 **SLAYER PROFILES & ARSENAL** 👤\n` +
+             `*Track your growth, breathe style variations, and equipped items.*\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+             `🎴 **LEDGER UTILITIES:**\n` +
+             `├─ \`/profile\` ➜ View rank passport, levels, live XP & status cards\n` +
+             `├─ \`/inventory\` ➜ Inspect your stored drops, ores & serum reserves\n` +
+             `├─ \`/char\` ➜ List every indexed card database entry\n` +
+             `├─ \`/char <name/id>\` ➜ Inspect specific character stats and records\n` +
+             `└─ \`/equip\` ➜ Fasten unlocked weapons & trinkets to your slot\n\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     }
 
     if (data === "help_battle") {
-      text = `⚔️ **BATTLE SYSTEM**
-
-• \`/battle\` → Fight fierce battles for Coins/XP & update tasks
-• \`/hunt\` → Hunt down rogue targets for progression
-
-🛠️ **ADMIN CONTROLS**
-• \`/battle_toggle\` → Enable/Disable battle commands in the group`;
+      text = `⚔️ **BREATH COMBAT ENGINE** ⚔️\n` +
+             `*Deploy sword disciplines against rogue targets across the forest.*\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+             `👹 **OFFENSIVE DRIVES:**\n` +
+             `├─ \`/battle\` ➜ Face enemy combatants for dynamic Coin/XP drops\n` +
+             `└─ \`/hunt\` ➜ Execute special threat missions to satisfy tasks\n\n` +
+             `🛠️ **PILLAR ADMINISTRATIVE BLOCK:**\n` +
+             `└─ \`/battle_toggle\` ➜ Lock/Unlock skirmish commands inside this room\n\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     }
 
     if (data === "help_guide") {
-      text = `📋 **GUIDE & MISSIONS**
-
-• \`/task\` → View personalized daily mission progress
-• \`/guide\` → Open full visual interactive user guide panels
-• *Complete daily tasks to unlock 20 Mythic Tokens & 50 XP!*`;
+      text = `🦅 **KASUGAI CROW DIRECTIVES** 🦅\n` +
+             `*Headquarter dispatches updated automatically every solar loop.*\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+             `📜 **MISSION MONITORING:**\n` +
+             `├─ \`/task\` ➜ Check progress benchmarks on active training orders\n` +
+             `└─ \`/guide\` ➜ Launch visual step-by-step interactive logs\n\n` +
+             `🎁 **WEEKLY PERFORMANCE BONUS:**\n` +
+             `💡 *Fulfill directives to automatically draw \`+20 Tokens\` & \`+50 XP\`!*\n\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     }
 
     if (data === "help_lb") {
-      text = `🏆 **LEADERBOARD**
-
-• \`/guildlb\` → Main ranking network for elite clans`;
+      text = `🏆 **LEADERBOARD RECOGNITION** 🏆\n` +
+             `*See who stands at the peak of the Slayer Corps standings.*\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+             `📊 **RANK NETWORKS:**\n` +
+             `└─ \`/guildlb\` ➜ Ranks elite factions based on accumulated bank vaults\n\n` +
+             `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     }
 
-    // Safety fallback check to prevent empty message crashes
     if (text) {
       bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
     }
