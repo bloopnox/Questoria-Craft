@@ -1,8 +1,6 @@
 // ==========================================
-// 🎰 NICHIRIN FORGE GACHA SYSTEM (spin.js)
+// 🎰 NICHIRIN FORGE GACHA SYSTEM
 // ==========================================
-const { getDB, saveDB, sanitizeUserObject } = require('./economy');
-
 const normalCards = [
     { name: "Mizunoto Recruit" }, { name: "Mizunoe Slayer" }, 
     { name: "Kanoto Swordsman" }, { name: "Kanoe Guardian" },
@@ -22,8 +20,10 @@ module.exports = (bot) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         
-        let db = getDB();
-        db[userId] = sanitizeUserObject(db[userId]);
+        if (!global.economyDB) return console.log("⚠️ Economy Core not loaded yet!");
+
+        let db = global.economyDB.getDB();
+        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
         let p = db[userId];
 
         if (!match[1]) {
@@ -56,8 +56,8 @@ module.exports = (bot) => {
     });
 
     async function executeSpinLogic(chatId, userId, mode, count) {
-        let db = getDB();
-        db[userId] = sanitizeUserObject(db[userId]);
+        let db = global.economyDB.getDB();
+        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
         let p = db[userId];
 
         let cost = 0;
@@ -66,31 +66,31 @@ module.exports = (bot) => {
         let assetSymbol = "";
 
         if (mode === "normal") {
-            currencyKey = "coins";
-            assetSymbol = "🪙";
+            currencyKey = "coins"; assetSymbol = "🪙";
             if (count === 1) cost = 25;
             else if (count === 5) cost = 250;
             else if (count === 10) { cost = 500; rolls = 11; } 
             else if (count === 50) cost = 2500;
+            else return bot.sendMessage(chatId, "❌ **Invalid Bundle!** Options: 1, 5, 10, 50.");
         } 
         else if (mode === "character") {
-            currencyKey = "mythic";
-            assetSymbol = "✨";
+            currencyKey = "mythic"; assetSymbol = "✨";
             if (count === 1) cost = 1500;
             else if (count === 5) cost = 7500;
+            else return bot.sendMessage(chatId, "❌ **Mythic Bundles are limited to 1x or 5x spins only!**");
         } 
         else if (mode === "material") {
-            currencyKey = "crystals";
-            assetSymbol = "💎";
+            currencyKey = "crystals"; assetSymbol = "💎";
             if (count === 1) cost = 50;
             else if (count === 5) cost = 250;
             else if (count === 10) { cost = 500; rolls = 11; } 
             else if (count === 50) cost = 2500;
+            else return bot.sendMessage(chatId, "❌ **Invalid Bundle!** Options: 1, 5, 10, 50.");
         }
 
         let currentUserBalance = parseInt(p[currencyKey], 10) || 0;
         if (currentUserBalance < cost) {
-            return bot.sendMessage(chatId, `❌ **Sack Depleted!** Need ${assetSymbol} \`${cost.toLocaleString()}\`.`);
+            return bot.sendMessage(chatId, `❌ **Sack Depleted!** Need ${assetSymbol} \`${cost.toLocaleString()}\`. Current: ${assetSymbol} \`${currentUserBalance.toLocaleString()}\``);
         }
 
         let lootEarned = [];
@@ -110,8 +110,7 @@ module.exports = (bot) => {
             } 
             else if (mode === "character") {
                 const randChance = Math.random() * 100;
-                let droppedCharName = "";
-                let droppedCharId = "";
+                let droppedCharName = ""; let droppedCharId = "";
 
                 if (randChance < 3.0) { 
                     const muzan = mythicCards.find(c => c.id.includes("muzan"));
@@ -152,26 +151,31 @@ module.exports = (bot) => {
         }
 
         p[currencyKey] -= cost;
-        db[userId] = sanitizeUserObject(p); 
-        saveDB(db);
+        db[userId] = global.economyDB.sanitizeUserObject(p); 
+        global.economyDB.saveDB(db);
 
-        const processingMsg = await bot.sendMessage(chatId, `🎰 **NICHIRIN FORGE SLOTS**\n🔄 Processing...`);
+        const processingMsg = await bot.sendMessage(chatId, `🎰 **NICHIRIN FORGE SLOTS | MODE: ${mode.toUpperCase()}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 Processing templates...\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
         const reportSummary = lootEarned.map(item => `• ${item}`).join('\n');
 
         await bot.editMessageText(
-            `🎰 **FORGE DROP REPORT**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n${reportSummary}\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Secure`, 
+            `🎰 **FORGE DROP REPORT | PROCESS COMPLETION**\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `🎁 **EXTRACTED REWARDS (${rolls}x Processing):**\n${reportSummary}\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+            `BANK STORAGE SAVED STATUS: ✅ SECURE\n` +
+            `• Coins: \`${p.coins.toLocaleString()}\` | Crystals: \`${p.crystals}\` | Tokens: \`${p.mythic}\``, 
             { chat_id: chatId, message_id: processingMsg.message_id, parse_mode: "Markdown" }
         ).catch(() => {});
     }
 
-    // 🎛️ BUTTON INTERCEPTOR (Only fires for spin buttons)
+    // 🎛️ INLINE KEYBOARD CONTROLLER WITH BYPASS PROTECTION
     bot.on("callback_query", async (query) => {
         const chatId = query.message.chat.id;
         const callerId = query.from.id.toString();
         const dataPayload = query.data;
 
-        // SAFE BYPASS FOR BATTLE BUTTONS
-        if (!dataPayload.startsWith("select_platform:") && !dataPayload.startsWith("btn_spin:") && !dataPayload.startsWith("spin_back_main:")) {
+        // 🔥 SHIELD: Agar spin button nahi hai, toh choke mat karo, chupchaap nikal jao!
+        if (!dataPayload.startsWith("select_platform:") && !dataPayload.startsWith("btn_spin:") && !dataPayload.startsWith("spin_back_main")) {
             return; 
         }
 
@@ -180,29 +184,64 @@ module.exports = (bot) => {
 
         if (originalOwnerId && originalOwnerId !== callerId && !dataPayload.startsWith("spin_back_main")) {
             return bot.answerCallbackQuery(query.id, {
-                text: "❌ This is not your personal dashboard!",
+                text: "❌ This is not your personal dashboard! Run /spin to open your own menu.",
                 show_alert: true
             });
         }
 
         if (dataPayload.startsWith("select_platform:")) {
             const targetPlatform = chunks[1];
-            let title = targetPlatform.toUpperCase() + " SPIN BUNDLES";
-            let keyboardRows = [
-                [{ text: `🎰 1x`, callback_data: `btn_spin:${targetPlatform}:1:${callerId}` }],
-                [{ text: "⬅️ Back", callback_data: `spin_back_main:${callerId}` }]
-            ];
+            let title = ""; let baseAsset = ""; let rate1 = 0; let rate5 = 0;
 
-            await bot.editMessageText(`🎰 **${title}**`, {
-                chat_id: chatId, message_id: query.message.message_id,
-                reply_markup: JSON.stringify({ inline_keyboard: keyboardRows }), parse_mode: "Markdown"
-            }).catch(() => {});
+            if (targetPlatform === "normal") {
+                title = "🪙 NORMAL SPIN BUNDLES"; baseAsset = "Coins"; rate1 = 25; rate5 = 250;
+            } else if (targetPlatform === "character") {
+                title = "✨ MYTHIC SPIN BUNDLES"; baseAsset = "Tokens"; rate1 = 1500; rate5 = 7500;
+            } else if (targetPlatform === "material") {
+                title = "💎 MATERIAL SPIN BUNDLES"; baseAsset = "Crystals"; rate1 = 50; rate5 = 250;
+            }
+
+            let keyboardRows = [];
+            if (targetPlatform === "character") {
+                keyboardRows.push([
+                    { text: `🎰 1x Spin (${rate1} ${baseAsset})`, callback_data: `btn_spin:character:1:${callerId}` },
+                    { text: `🔥 5x Spin (${rate5} ${baseAsset})`, callback_data: `btn_spin:character:5:${callerId}` }
+                ]);
+            } else {
+                keyboardRows.push([
+                    { text: `🎰 1x`, callback_data: `btn_spin:${targetPlatform}:1:${callerId}` },
+                    { text: `🚀 5x`, callback_data: `btn_spin:${targetPlatform}:5:${callerId}` }
+                ]);
+                keyboardRows.push([
+                    { text: `💥 10x (+1 Free!)`, callback_data: `btn_spin:${targetPlatform}:10:${callerId}` },
+                    { text: `👑 50x Mega Box`, callback_data: `btn_spin:${targetPlatform}:50:${callerId}` }
+                ]);
+            }
+            keyboardRows.push([{ text: "⬅️ Back to Main Menu", callback_data: `spin_back_main:${callerId}` }]);
+
+            await bot.editMessageText(
+                `🎰 **${title}**\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `Select your desired bundle multiplier depth:\n` +
+                `• *10x multi-spins add +1 Free Roll inside execution loop!*\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━━━━`, 
+                {
+                    chat_id: chatId, message_id: query.message.message_id,
+                    reply_markup: JSON.stringify({ inline_keyboard: keyboardRows }), parse_mode: "Markdown"
+                }
+            ).catch(() => {});
             return bot.answerCallbackQuery(query.id);
         }
 
         if (dataPayload.startsWith("btn_spin:")) {
             bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
             await executeSpinLogic(chatId, callerId, chunks[1], parseInt(chunks[2], 10) || 1);
+            return bot.answerCallbackQuery(query.id);
+        }
+
+        if (dataPayload.startsWith("spin_back_main")) {
+            bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+            bot.processUpdate({ message: { chat: { id: chatId }, from: { id: callerId }, text: "/spin" } });
             return bot.answerCallbackQuery(query.id);
         }
     });
