@@ -48,13 +48,15 @@ function saveDB(data) {
 function sanitizeUserObject(user) {
     let u = user || {};
     
-    // 🔥 CRITICAL FIX: Checking both 'mythic' and fallback 'tokens' key to prevent 0-reset bugs
-    let rawMythicTokens = u.mythic !== undefined ? u.mythic : (u.tokens !== undefined ? u.tokens : 0);
+    // Fallback system to check for alternative naming conventions in players.json
+    let currentCoins = u.coins !== undefined ? u.coins : 500;
+    let currentCrystals = u.crystals !== undefined ? u.crystals : 0;
+    let currentMythic = u.mythic !== undefined ? u.mythic : (u.tokens !== undefined ? u.tokens : 0);
 
     return {
-        coins: Math.max(0, parseInt(u.coins, 10) || 500),
-        crystals: Math.max(0, parseInt(u.crystals, 10) || 0),
-        mythic: Math.max(0, parseInt(rawMythicTokens, 10) || 0), // Fully strict token parser
+        coins: Math.max(0, parseInt(currentCoins, 10) || 500),
+        crystals: Math.max(0, parseInt(currentCrystals, 10) || 0),
+        mythic: Math.max(0, parseInt(currentMythic, 10) || 0),
         inventory: Array.isArray(u.inventory) ? u.inventory : [],
         materials: u.materials && typeof u.materials === 'object' ? u.materials : {},
         lastWork: parseInt(u.lastWork, 10) || 0,
@@ -92,7 +94,7 @@ module.exports = (bot) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         const now = Date.now();
-        const cooldown = 5 * 60 * 1000; // 5 mins cooldown
+        const cooldown = 5 * 60 * 1000;
 
         let db = getDB();
         db[userId] = sanitizeUserObject(db[userId]);
@@ -103,7 +105,7 @@ module.exports = (bot) => {
             return bot.sendMessage(chatId, `⏳ **Exhaustion Alert!** Slayers need rest. Wait \`${remaining}s\` before your next patrol.`);
         }
 
-        const payout = Math.floor(Math.random() * 80) + 50; // 50-130 Coins
+        const payout = Math.floor(Math.random() * 80) + 50;
         p.coins += payout;
         p.lastWork = now;
 
@@ -120,7 +122,7 @@ module.exports = (bot) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         const now = Date.now();
-        const cooldown = 20 * 60 * 60 * 1000; // 20 hours daily lock
+        const cooldown = 20 * 60 * 60 * 1000;
 
         let db = getDB();
         db[userId] = sanitizeUserObject(db[userId]);
@@ -214,7 +216,6 @@ module.exports = (bot) => {
         }
 
         let rawCharacter = p.inventory[baseCharIndex];
-        
         let charObject = { name: "", level: 1 };
         if (typeof rawCharacter === "string") {
             charObject.name = rawCharacter;
@@ -284,15 +285,16 @@ module.exports = (bot) => {
         let p = db[userId];
 
         if (!match[1]) {
+            // 🔥 CRITICAL PROTECTION: Embedding Owner's ID into the callback data payload structure
             const platformMenu = {
                 reply_markup: JSON.stringify({
                     inline_keyboard: [
                         [
-                            { text: "🪙 Normal Platform", callback_data: `select_platform:normal` },
-                            { text: "✨ Mythic Platform", callback_data: `select_platform:character` }
+                            { text: "🪙 Normal Platform", callback_data: `select_platform:normal:${userId}` },
+                            { text: "✨ Mythic Platform", callback_data: `select_platform:character:${userId}` }
                         ],
                         [
-                            { text: "💎 Material Platform", callback_data: `select_platform:material` }
+                            { text: "💎 Material Platform", callback_data: `select_platform:material:${userId}` }
                         ]
                     ]
                 }),
@@ -303,7 +305,7 @@ module.exports = (bot) => {
                 `🎰 **NICHIRIN FORGE | SELECTION PORTAL**\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                 `Slayer, choose your extraction platform to unlock bundles:\n\n` +
-                `🪙 **Coins:** \`${p.coins.toLocaleString()}\` | ✨ **Tokens:** \`${p.mythic.toLocaleString()}\` | 💎 **Crystals:** \`${p.crystals.toLocaleString()}\`\n` +
+                `🪙 **Coins:** \`${p.coins.toLocaleString()}\` | ✨ **Tokens/Mythic:** \`${p.mythic.toLocaleString()}\` | 💎 **Crystals:** \`${p.crystals.toLocaleString()}\`\n` +
                 `━━━━━━━━━━━━━━━━━━━━━━━━━━`, 
                 platformMenu
             );
@@ -313,7 +315,7 @@ module.exports = (bot) => {
     });
 
     // ==========================================
-    // ⚡ CENTRAL PHYSICS SPIN EXECUTION ENGINE (FULLY SECURED)
+    // ⚡ CENTRAL PHYSICS SPIN EXECUTION ENGINE
     // ==========================================
     async function executeSpinLogic(chatId, userId, mode, count) {
         let db = getDB();
@@ -322,7 +324,7 @@ module.exports = (bot) => {
 
         let cost = 0;
         let rolls = count;
-        let currencyKey = "mythic"; // Default fallback execution pointer
+        let currencyKey = "mythic";
         let assetSymbol = "";
 
         if (mode === "normal") {
@@ -350,15 +352,14 @@ module.exports = (bot) => {
             else if (count === 50) cost = 2500;
             else return bot.sendMessage(chatId, "❌ **Invalid Material compilation parameters!** Options: 1, 5, 10, 50.");
         } else {
-            return bot.sendMessage(chatId, "❌ **Unknown Tier selection!** Use `/spin normal`, `/spin character`, or `/spin material`.");
+            return bot.sendMessage(chatId, "❌ **Unknown Tier selection!**");
         }
 
-        // 🔥 CRITICAL PROTECTION STACK: Strict type validation to prevent balance bypassing crashes
         let currentUserBalance = parseInt(p[currencyKey], 10);
         if (isNaN(currentUserBalance)) currentUserBalance = 0;
 
         if (currentUserBalance < cost) {
-            return bot.sendMessage(chatId, `❌ **Sack Depleted!** Need ${assetSymbol} \`${cost.toLocaleString()}\` for this operation. Your current balance is: ${assetSymbol} \`${currentUserBalance.toLocaleString()}\`.`);
+            return bot.sendMessage(chatId, `❌ **Sack Depleted!** Need ${assetSymbol} \`${cost.toLocaleString()}\`. Current Balance: ${assetSymbol} \`${currentUserBalance.toLocaleString()}\`.`);
         }
 
         let lootEarned = [];
@@ -430,12 +431,11 @@ module.exports = (bot) => {
             }
         }
 
-        // Deduct operational cost with base-10 radix shield
         p[currencyKey] = (parseInt(p[currencyKey], 10) || 0) - cost;
         db[userId] = sanitizeUserObject(p); 
         saveDB(db);
 
-        const processingMsg = await bot.sendMessage(chatId, `🎰 **NICHIRIN FORGE SLOTS | MODE: ${mode.toUpperCase()}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 Processing templates and structural state updates...\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
+        const processingMsg = await bot.sendMessage(chatId, `🎰 **NICHIRIN FORGE SLOTS | MODE: ${mode.toUpperCase()}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 Processing templates...\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
 
         const reportSummary = lootEarned.map(item => `• ${item}`).join('\n');
         let finalOutput = `🎰 **FORGE DROP REPORT | PROCESS COMPLETION**\n` +
@@ -457,47 +457,52 @@ module.exports = (bot) => {
     // ==========================================
     bot.on("callback_query", async (query) => {
         const chatId = query.message.chat.id;
-        const userId = query.from.id.toString();
+        const callerId = query.from.id.toString();
         const dataPayload = query.data;
 
+        // 🔥 CRITICAL INTERACTION SHIELD: Stop cross-user execution hijacking
+        const chunks = dataPayload.split(":");
+        const originalOwnerId = chunks[chunks.length - 1];
+
+        if (originalOwnerId && originalOwnerId !== callerId && dataPayload !== "spin_back_main") {
+            return bot.answerCallbackQuery(query.id, {
+                text: "❌ This is not your personal dashboard! Run /spin to open your own menu.",
+                show_alert: true
+            });
+        }
+
         if (dataPayload.startsWith("select_platform:")) {
-            const targetPlatform = dataPayload.split(":")[1];
+            const targetPlatform = chunks[1];
             
             let title = "";
             let baseAsset = "";
             let rate1 = 0, rate5 = 0;
 
             if (targetPlatform === "normal") {
-                title = "🪙 NORMAL SPIN BUNDLES";
-                baseAsset = "Coins";
-                rate1 = 25; rate5 = 250;
+                title = "🪙 NORMAL SPIN BUNDLES"; baseAsset = "Coins"; rate1 = 25; rate5 = 250;
             } else if (targetPlatform === "character") {
-                title = "✨ MYTHIC SPIN BUNDLES";
-                baseAsset = "Tokens";
-                rate1 = 1500; rate5 = 7500;
+                title = "✨ MYTHIC SPIN BUNDLES"; baseAsset = "Tokens"; rate1 = 1500; rate5 = 7500;
             } else if (targetPlatform === "material") {
-                title = "💎 MATERIAL SPIN BUNDLES";
-                baseAsset = "Crystals";
-                rate1 = 50; rate5 = 250;
+                title = "💎 MATERIAL SPIN BUNDLES"; baseAsset = "Crystals"; rate1 = 50; rate5 = 250;
             }
 
             let keyboardRows = [];
             if (targetPlatform === "character") {
                 keyboardRows.push([
-                    { text: `🎰 1x Spin (${rate1} ${baseAsset})`, callback_data: `btn_spin:character:1` },
-                    { text: `🔥 5x Spin (${rate5} ${baseAsset})`, callback_data: `btn_spin:character:5` }
+                    { text: `🎰 1x Spin (${rate1} ${baseAsset})`, callback_data: `btn_spin:character:1:${callerId}` },
+                    { text: `🔥 5x Spin (${rate5} ${baseAsset})`, callback_data: `btn_spin:character:5:${callerId}` }
                 ]);
             } else {
                 keyboardRows.push([
-                    { text: `🎰 1x`, callback_data: `btn_spin:${targetPlatform}:1` },
-                    { text: `🚀 5x`, callback_data: `btn_spin:${targetPlatform}:5` }
+                    { text: `🎰 1x`, callback_data: `btn_spin:${targetPlatform}:1:${callerId}` },
+                    { text: `🚀 5x`, callback_data: `btn_spin:${targetPlatform}:5:${callerId}` }
                 ]);
                 keyboardRows.push([
-                    { text: `💥 10x (+1 Free Bonus!)`, callback_data: `btn_spin:${targetPlatform}:10` },
-                    { text: `👑 50x Mega Box`, callback_data: `btn_spin:${targetPlatform}:50` }
+                    { text: `💥 10x (+1 Free Bonus!)`, callback_data: `btn_spin:${targetPlatform}:10:${callerId}` },
+                    { text: `👑 50x Mega Box`, callback_data: `btn_spin:${targetPlatform}:50:${callerId}` }
                 ]);
             }
-            keyboardRows.push([{ text: "⬅️ Back to Main Menu", callback_data: "spin_back_main" }]);
+            keyboardRows.push([{ text: "⬅️ Back to Main Menu", callback_data: `spin_back_main:${callerId}` }]);
 
             await bot.editMessageText(
                 `🎰 **${title}**\n` +
@@ -517,17 +522,18 @@ module.exports = (bot) => {
         }
 
         if (dataPayload.startsWith("btn_spin:")) {
-            const [_, targetMode, countVal] = dataPayload.split(":");
+            const targetMode = chunks[1];
+            const countVal = chunks[2];
             const runCount = parseInt(countVal, 10) || 1;
             
             bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
-            await executeSpinLogic(chatId, userId, targetMode, runCount);
+            await executeSpinLogic(chatId, callerId, targetMode, runCount);
             return bot.answerCallbackQuery(query.id);
         }
 
-        if (dataPayload === "spin_back_main") {
+        if (dataPayload.startsWith("spin_back_main")) {
             bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
-            bot.processUpdate({ message: { chat: { id: chatId }, from: { id: userId }, text: "/spin" } });
+            bot.processUpdate({ message: { chat: { id: chatId }, from: { id: callerId }, text: "/spin" } });
             return bot.answerCallbackQuery(query.id);
         }
     });
