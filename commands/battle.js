@@ -10,7 +10,7 @@ const battles = {};
 
 module.exports = (bot) => {
   
-  // 🧭 HELPER: Navigation controls
+  // 🧭 HELPER: Navigation controls (Ye sirf battle KE BAAD ya entry frame par dikhenge)
   const getNavigationButtons = (targetUserId) => {
     return [
       [{ text: "👤 Profile", callback_data: `profile_${targetUserId}` }, { text: "🎴 Cards", callback_data: `cards_${targetUserId}` }],
@@ -20,20 +20,18 @@ module.exports = (bot) => {
 
   // ⏱️ HELPER: Auto-Timeout Engine (2 Minutes)
   const startBattleTimer = (userId, chatId, messageId, demonName) => {
-    // Agar pehle se koi timer chal raha hai is user ka, toh use clear karo
     if (battles[userId] && battles[userId].timerId) {
       clearTimeout(battles[userId].timerId);
     }
 
-    // 2 Minute (120,000 milliseconds) ka execution alert lagao
     const timerId = setTimeout(async () => {
       if (battles[userId]) {
-        delete battles[userId]; // Memory space instantly free
+        delete battles[userId]; 
 
-        await bot.editMessageCaption(`⏳ **BATTLE EXPIRED!**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nSlayer, aapne 2 minute tak koi action nahi liya. **${demonName}** andhere ka fayda uthakar bhag gaya!`, {
+        await bot.editMessageCaption(`⏳ **BATTLE EXPIRED!**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nSlayer, aapne 2 minute tak koi action nahi liya. **${demonName}** bhag gaya!`, {
           chat_id: chatId,
           message_id: messageId,
-          reply_markup: { inline_keyboard: getNavigationButtons(userId) } // Sirf navigation buttons chhodenge
+          reply_markup: { inline_keyboard: getNavigationButtons(userId) } // Battle khatam, buttons wapas aaye
         }).catch(() => {});
       }
     }, 120000);
@@ -66,8 +64,6 @@ module.exports = (bot) => {
     if (battles[userId]) return bot.sendMessage(chatId, "⚠️ You are already in a battle!");
 
     const demon = demons[Math.floor(Math.random() * demons.length)];
-    
-    // Initializing structure state
     battles[userId] = { demon, playerHp: 150, demonHp: demon.hp, shield: false, timerId: null };
 
     const sentMsg = await bot.sendPhoto(chatId, demon.image, {
@@ -76,12 +72,11 @@ module.exports = (bot) => {
       reply_markup: {
         inline_keyboard: [
           [{ text: "⚔️ Slay", callback_data: `slay_${userId}` }, { text: "🏃 Run", callback_data: `run_${userId}` }],
-          ...getNavigationButtons(userId)
+          ...getNavigationButtons(userId) // Pehle entry frame par options dikhenge
         ]
       }
     });
 
-    // ⏳ Trigger first countdown timer frame
     battles[userId].timerId = startBattleTimer(userId, chatId, sentMsg.message_id, demon.name);
   });
 
@@ -111,27 +106,25 @@ module.exports = (bot) => {
     const messageId = query.message.message_id;
 
     if (action === "run") {
-      // 🛑 Fight end: Clear runtime timer safely
       if (battle.timerId) clearTimeout(battle.timerId);
       delete battles[targetUserId];
       
       await bot.editMessageCaption(`🏃 You escaped safely from ${demon.name}!`, { 
         chat_id: chatId, 
         message_id: messageId,
-        reply_markup: { inline_keyboard: getNavigationButtons(targetUserId) }
+        reply_markup: { inline_keyboard: getNavigationButtons(targetUserId) } // Escape karne par buttons wapas aaye
       });
     } 
     else if (action === "slay") {
-      // ⏳ User active: Reset 2-minute timer for combat turns
       battle.timerId = startBattleTimer(targetUserId, chatId, messageId, demon.name);
 
+      // 🔥 CLEAN UI: Slay dabate hi baki saare profile/cards ke buttons gayab! Sirf fighting buttons bachenge.
       await bot.editMessageCaption(`⚔️ **Battle Started Against ${demon.name}!**\n\n❤️ Your HP: ${battle.playerHp}\n👹 Demon HP: ${battle.demonHp}\n\n⏱ _Turn complete karne ke liye 2 minute hain!_`, {
         chat_id: chatId, message_id: messageId, parse_mode: "Markdown",
         reply_markup: { 
           inline_keyboard: [
             [{ text: "🗡 Attack", callback_data: `attack_${targetUserId}` }, { text: "🛡 Shield", callback_data: `shield_${targetUserId}` }], 
-            [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }],
-            ...getNavigationButtons(targetUserId)
+            [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }] // No profile/cards buttons here!
           ] 
         }
       });
@@ -153,7 +146,6 @@ module.exports = (bot) => {
 
         // WIN CONDITION REACHED
         if (battle.demonHp <= 0) {
-          // 🛑 Clear timer instantly on win
           if (battle.timerId) clearTimeout(battle.timerId);
 
           let freshPlayers = {};
@@ -206,7 +198,7 @@ module.exports = (bot) => {
             chat_id: chatId, 
             message_id: messageId, 
             parse_mode: "Markdown",
-            reply_markup: { inline_keyboard: getNavigationButtons(targetUserId) }
+            reply_markup: { inline_keyboard: getNavigationButtons(targetUserId) } // Jeetne ke baad profile buttons wapas aaye
           });
         }
       }
@@ -224,7 +216,6 @@ module.exports = (bot) => {
 
       // DEFEAT CONDITION REACHED
       if (battle.playerHp <= 0) {
-        // 🛑 Clear timer instantly on defeat
         if (battle.timerId) clearTimeout(battle.timerId);
         delete battles[targetUserId];
 
@@ -232,19 +223,18 @@ module.exports = (bot) => {
           chat_id: chatId, 
           message_id: messageId, 
           parse_mode: "Markdown",
-          reply_markup: { inline_keyboard: getNavigationButtons(targetUserId) }
+          reply_markup: { inline_keyboard: getNavigationButtons(targetUserId) } // Harne ke baad profile buttons wapas aaye
         });
       } else {
-        // ⏳ Reset 2-minute timer for the next turn loop block
         battle.timerId = startBattleTimer(targetUserId, chatId, messageId, demon.name);
 
+        // 🔥 FIGHT CHAL RAHI HAI: Sirf core actions dikhao, clean interface rakho
         await bot.editMessageCaption(`${turnLogMessage}\n👹 Demon HP: ${battle.demonHp}\n❤️ Your HP: ${battle.playerHp}\n\n⏱ _Turn complete karne ke liye 2 minute hain!_`, {
           chat_id: chatId, message_id: messageId, parse_mode: "Markdown",
           reply_markup: { 
             inline_keyboard: [
               [{ text: "🗡 Attack", callback_data: `attack_${targetUserId}` }, { text: "🛡 Shield", callback_data: `shield_${targetUserId}` }], 
-              [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }],
-              ...getNavigationButtons(targetUserId)
+              [{ text: "🏃 Run", callback_data: `run_${targetUserId}` }] // Clean layout sustained during active combat
             ] 
           }
         });
