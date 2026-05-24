@@ -4,45 +4,46 @@
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'data', 'players.json');
+const dbPath = path.join(process.cwd(), 'data', 'players.json');
 
-function getDB() {
-    try {
-        if (!fs.existsSync(dbPath)) {
-            fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-            fs.writeFileSync(dbPath, JSON.stringify({}), 'utf8');
+// --- DATABASE UTILITIES (Shared via Global Object to keep loader safe)
+global.economyDB = {
+    getDB: function() {
+        try {
+            if (!fs.existsSync(dbPath)) {
+                fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+                fs.writeFileSync(dbPath, JSON.stringify({}), 'utf8');
+            }
+            return JSON.parse(fs.readFileSync(dbPath, 'utf8') || '{}');
+        } catch (e) {
+            console.error("🚨 DB Read Error:", e);
+            return {};
         }
-        return JSON.parse(fs.readFileSync(dbPath, 'utf8') || '{}');
-    } catch (e) {
-        console.error("🚨 DB Read Error:", e);
-        return {};
+    },
+    saveDB: function(data) {
+        try {
+            fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+        } catch (e) {
+            console.error("🚨 DB Write Error:", e);
+        }
+    },
+    sanitizeUserObject: function(user) {
+        let u = user || {};
+        let currentCoins = u.coins !== undefined ? u.coins : 500;
+        let currentCrystals = u.crystals !== undefined ? u.crystals : 0;
+        let currentMythic = u.mythic !== undefined ? u.mythic : (u.tokens !== undefined ? u.tokens : 0);
+
+        return {
+            coins: Math.max(0, parseInt(currentCoins, 10) || 500),
+            crystals: Math.max(0, parseInt(currentCrystals, 10) || 0),
+            mythic: Math.max(0, parseInt(currentMythic, 10) || 0),
+            inventory: Array.isArray(u.inventory) ? u.inventory : [],
+            materials: u.materials && typeof u.materials === 'object' ? u.materials : {},
+            lastWork: parseInt(u.lastWork, 10) || 0,
+            lastTask: parseInt(u.lastTask, 10) || 0
+        };
     }
-}
-
-function saveDB(data) {
-    try {
-        fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
-    } catch (e) {
-        console.error("🚨 DB Write Error:", e);
-    }
-}
-
-function sanitizeUserObject(user) {
-    let u = user || {};
-    let currentCoins = u.coins !== undefined ? u.coins : 500;
-    let currentCrystals = u.crystals !== undefined ? u.crystals : 0;
-    let currentMythic = u.mythic !== undefined ? u.mythic : (u.tokens !== undefined ? u.tokens : 0);
-
-    return {
-        coins: Math.max(0, parseInt(currentCoins, 10) || 500),
-        crystals: Math.max(0, parseInt(currentCrystals, 10) || 0),
-        mythic: Math.max(0, parseInt(currentMythic, 10) || 0),
-        inventory: Array.isArray(u.inventory) ? u.inventory : [],
-        materials: u.materials && typeof u.materials === 'object' ? u.materials : {},
-        lastWork: parseInt(u.lastWork, 10) || 0,
-        lastTask: parseInt(u.lastTask, 10) || 0
-    };
-}
+};
 
 module.exports = (bot) => {
     // 🏦 /balance
@@ -50,8 +51,8 @@ module.exports = (bot) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
 
-        let db = getDB();
-        db[userId] = sanitizeUserObject(db[userId]);
+        let db = global.economyDB.getDB();
+        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
         const p = db[userId];
 
         const report = `💰 **SLAYER FINANCIAL REGISTRY**\n` +
@@ -71,8 +72,8 @@ module.exports = (bot) => {
         const now = Date.now();
         const cooldown = 5 * 60 * 1000;
 
-        let db = getDB();
-        db[userId] = sanitizeUserObject(db[userId]);
+        let db = global.economyDB.getDB();
+        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
         let p = db[userId];
 
         if (now - p.lastWork < cooldown) {
@@ -85,7 +86,7 @@ module.exports = (bot) => {
         p.lastWork = now;
 
         db[userId] = p;
-        saveDB(db);
+        global.economyDB.saveDB(db);
 
         bot.sendMessage(chatId, `🦅 **Patrol Successful!** You secured the area perimeter and earned 🪙 \`${payout}\` Crow Coins.`);
     });
@@ -97,8 +98,8 @@ module.exports = (bot) => {
         const now = Date.now();
         const cooldown = 20 * 60 * 60 * 1000;
 
-        let db = getDB();
-        db[userId] = sanitizeUserObject(db[userId]);
+        let db = global.economyDB.getDB();
+        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
         let p = db[userId];
 
         if (now - p.lastTask < cooldown) {
@@ -114,7 +115,7 @@ module.exports = (bot) => {
         p.lastTask = now;
 
         db[userId] = p;
-        saveDB(db);
+        global.economyDB.saveDB(db);
 
         bot.sendMessage(chatId, `📜 **MISSION COMPLETION NOTICE**\n━━━━━━━━━━━━━━━━━━━━━\nRank mission achieved! Received:\n• 🪙 \`${coinReward}\` Coins\n• 💎 \`${crystalReward}\` Crystals\n━━━━━━━━━━━━━━━━━━━━━\nYour accounts are fully synchronized.`);
     });
@@ -124,8 +125,8 @@ module.exports = (bot) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
 
-        let db = getDB();
-        db[userId] = sanitizeUserObject(db[userId]);
+        let db = global.economyDB.getDB();
+        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
         let p = db[userId];
 
         const direction = match[1] ? match[1].toLowerCase() : "";
@@ -144,7 +145,7 @@ module.exports = (bot) => {
             p.crystals += amount;
 
             db[userId] = p;
-            saveDB(db);
+            global.economyDB.saveDB(db);
 
             bot.sendMessage(chatId, `✅ **Vault Transaction Certified!** Converted 🪙 \`${cost}\` Coins into 💎 \`${amount}\` Crystals.`);
         } else {
@@ -152,8 +153,3 @@ module.exports = (bot) => {
         }
     });
 };
-
-// Export karke helper functions doosri files ko de dete hain
-module.exports.getDB = getDB;
-module.exports.saveDB = saveDB;
-module.exports.sanitizeUserObject = sanitizeUserObject;
