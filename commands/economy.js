@@ -1,10 +1,9 @@
-console.log("💰 VELIX OS | DEMON SLAYER ECONOMY ENGINE [UI v2.7 - ONLINE]");
+console.log("💰 VELIX OS | DEMON SLAYER ECONOMY ENGINE [UI v2.8 - ONLINE]");
 
 const fs = require("fs");
 const path = require("path");
 const playerFile = path.join(process.cwd(), "data", "players.json");
 
-// Dynamic items allocation base pool from core asset blocks
 const { characters: normalCards } = require("../asset/assets.js");
 const { mythical: mythicCards } = require("../asset/mythical.js");
 
@@ -32,11 +31,11 @@ module.exports = (bot) => {
                 coins: 500, crystals: 0, mythic: 0, exp: 0, level: 1, 
                 last_daily: "", active_task: null,
                 inventory: [],
-                materials: [] 
+                materials: {} 
             };
             saveDB(db);
         } else {
-            if (!db[userId].materials) db[userId].materials = [];
+            if (!db[userId].materials || Array.isArray(db[userId].materials)) db[userId].materials = {};
             if (!db[userId].inventory) db[userId].inventory = [];
         }
         return db;
@@ -53,15 +52,19 @@ module.exports = (bot) => {
     };
 
     // ==========================================
-    // 💮 1. /balance & /bal (SLAYER CORPS PROFILE)
+    // 💮 1. /balance & /bal
     // ==========================================
     bot.onText(/\/(?:balance|bal)/, (msg) => {
         const userId = msg.from.id.toString();
         let db = ensureUser(userId);
         let p = db[userId];
 
-        const totalSerums = p.materials.filter(m => m.endsWith('_essence')).length;
-        const totalOres = p.materials.filter(m => m.endsWith('_blessing')).length;
+        let totalSerums = 0;
+        let totalOres = p.materials["universal_blessing"] || 0;
+        
+        Object.keys(p.materials).forEach(key => {
+            if (key.endsWith('_essence')) totalSerums += p.materials[key];
+        });
 
         const text = `💮 **SLAYER REGISTER | CORPS PASSPORT** 💮\n` +
                      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
@@ -71,18 +74,18 @@ module.exports = (bot) => {
                      `💰 **FINANCIAL LEDGER:**\n` +
                      `🪙 **Crow Coins:** \`${Number(p.coins).toLocaleString()}\`\n` +
                      `💎 **Nichirin Crystals:** \`${Number(p.crystals).toLocaleString()}\`\n` +
-                     `✨ **Mythic Essence:** \`${Number(p.mythic).toLocaleString()}\`\n\n` +
+                     `✨ **Mythic Tokens:** \`${Number(p.mythic).toLocaleString()}\`\n\n` +
                      `📦 **VAULT INVENTORY:**\n` +
-                     `🧪 **Wisteria Serums:** \`${totalSerums}\` units\n` +
-                     `⚔️ **Nichirin Ores:** \`${totalOres}\` pieces\n\n` +
-                     `📖 *Check items:* \`/essence <name>\` or \`/blessing <name>\`\n` +
+                     `🧪 **Specific Essences:** \`${totalSerums}\` units\n` +
+                     `⚔️ **Universal Blessings:** \`${totalOres}\` / 3 pieces\n\n` +
+                     `📖 *Usage:* \`/use <character>_essence\`\n` +
                      `━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
         bot.sendMessage(msg.chat.id, text, { parse_mode: "Markdown" });
     });
 
     // ==========================================
-    // 🦅 2. /task (KASUGAI CROW DIRECTIVE)
+    // 🦅 2. /task
     // ==========================================
     bot.onText(/\/task/, (msg) => {
         const userId = msg.from.id.toString();
@@ -112,7 +115,7 @@ module.exports = (bot) => {
     });
 
     // ==========================================
-    // 🔄 3. /convert (CURRENCY EXCHANGER)
+    // 🔄 3. /convert
     // ==========================================
     bot.onText(/\/convert (.+) (.+)/, (msg, match) => {
         const userId = msg.from.id.toString();
@@ -143,127 +146,241 @@ module.exports = (bot) => {
     });
 
     // ==========================================
-    // 🏮 4. /spin (NICHIRIN FORGE SLOTS)
+    // 🏮 4. /spin (ADVANCED MULTI-TIER ENGINE)
     // ==========================================
-    bot.onText(/\/spin/, async (msg) => {
+    bot.onText(/\/spin\s*(\w*)\s*(\d*)/, async (msg, match) => {
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
         let db = ensureUser(userId);
         let p = db[userId];
 
-        const COIN_COST = 1200;
-        const TOKEN_COST = 5;
-        let paymentMethod = "";
+        const mode = match[1] ? match[1].toLowerCase() : "normal";
+        const count = match[2] ? parseInt(match[2], 10) : 1;
 
-        if (p.coins >= COIN_COST) {
-            p.coins -= COIN_COST;
-            paymentMethod = `🪙 -${COIN_COST} Crow Coins`;
-        } else if (p.mythic >= TOKEN_COST) {
-            p.mythic -= TOKEN_COST;
-            paymentMethod = `✨ -${TOKEN_COST} Mythic Tokens`;
+        let cost = 0;
+        let rolls = count;
+        let currencyKey = "";
+        let assetSymbol = "";
+
+        // Core Matrix Config Routing
+        if (mode === "normal") {
+            currencyKey = "coins";
+            assetSymbol = "🪙";
+            if (count === 1) cost = 25;
+            else if (count === 5) cost = 250;
+            else if (count === 10) { cost = 500; rolls = 11; } // +1 FREE SPIN
+            else if (count === 50) cost = 2500;
+            else return bot.sendMessage(chatId, "❌ **Invalid Multi-Spin count!** Options: 1, 5, 10, 50.");
+        } 
+        else if (mode === "character") {
+            currencyKey = "mythic";
+            assetSymbol = "✨";
+            if (count === 1) cost = 1500;
+            else if (count === 5) cost = 7500;
+            else return bot.sendMessage(chatId, "❌ **Character spin bundles are limited to 1x or 5x spins only!**");
+        } 
+        else if (mode === "material") {
+            currencyKey = "crystals";
+            assetSymbol = "💎";
+            if (count === 1) cost = 50;
+            else if (count === 5) cost = 250;
+            else if (count === 10) { cost = 500; rolls = 11; } // +1 FREE SPIN
+            else if (count === 50) cost = 2500;
+            else return bot.sendMessage(chatId, "❌ **Invalid Material compilation parameters!** Options: 1, 5, 10, 50.");
         } else {
-            return bot.sendMessage(chatId, `❌ **Forge Frozen!**\n\nNeed 🪙 ${COIN_COST} Coins or ✨ ${TOKEN_COST} Tokens to trigger bellows!`, { parse_mode: "Markdown" });
+            return bot.sendMessage(chatId, "❌ **Unknown Tier selection!** Use `/spin normal`, `/spin character`, or `/spin material` followed by count.");
         }
 
+        if (p[currencyKey] < cost) {
+            return bot.sendMessage(chatId, `❌ **Sack Depleted!** Need ${assetSymbol} \`${cost.toLocaleString()}\` for this operation.`);
+        }
+
+        p[currencyKey] -= cost;
         saveDB(db);
 
-        const rollingMsg = await bot.sendMessage(chatId, `🎰 **🎰 NICHIRIN FORGE SLOTS 🎰**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 [ 🟦 | 🟦 | 🟦 ] *Bellows expanding...*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`);
+        const processingMsg = await bot.sendMessage(chatId, `🎰 **NICHIRIN FORGE SLOTS | MODE: ${mode.toUpperCase()}**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 Bellows roaring, preparing processing vectors...\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Deducted:\` ${assetSymbol} ${cost.toLocaleString()}`);
 
-        const matrixFrames = [
-            `🎰 **🎰 NICHIRIN FORGE SLOTS 🎰**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 [ 🧪 | ⚔️ | 🪙 ] *Heating steels...*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`,
-            `🎰 **🎰 NICHIRIN FORGE SLOTS 🎰**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 [ 💎 | 💎 | 🧪 ] *Sparks cascading...*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`,
-            `🎰 **🎰 NICHIRIN FORGE SLOTS 🎰**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔄 [ ⚔️ | 👑 | 💎 ] *Tempering sword cores...*\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎟️ \`Fee:\` ${paymentMethod}`
-        ];
+        let lootEarned = [];
+        const normalNames = Array.isArray(normalCards) ? normalCards.map(c => c.name) : Object.keys(normalCards || {});
+        const mythicObjects = Array.isArray(mythicCards) ? mythicCards : [];
 
-        for (let i = 0; i < matrixFrames.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 750));
-            await bot.editMessageText(matrixFrames[i], {
-                chat_id: chatId,
-                message_id: rollingMsg.message_id,
-                parse_mode: "Markdown"
-            }).catch(() => {});
-        }
-
-        const rollValue = Math.random() * 100;
-        let slotDisplay = "";
-        let rewardTitle = "";
-        let rewardText = "";
-
-        if (rollValue < 2) { 
-            const amt = 25;
-            p.mythic = Number(p.mythic || 0) + amt;
-            slotDisplay = "👑 | 👑 | 👑";
-            rewardTitle = "✨ MYTHICAL JACKPOT EXTRACTION ✨";
-            rewardText = `🎉 Absolute Fortune! Salvaged **${amt} Mythic Tokens** directly from the inner forge channel!`;
-        } 
-        else if (rollValue < 12) { 
-            const amt = 12;
-            p.crystals = Number(p.crystals || 0) + amt;
-            slotDisplay = "💎 | 💎 | 💎";
-            rewardTitle = "💎 CRYSTAL MATRIX DROP 💎";
-            rewardText = `🎁 Sparking raw matrices! Handed over **${amt} Nichirin Crystals** to your pack.`;
-        } 
-        else if (rollValue < 40) { 
-            const amt = 3000;
-            p.coins += amt;
-            slotDisplay = "🪙 | 🪙 | 🧪";
-            rewardTitle = "🪙 MASSIVE COINS RETURN 🪙";
-            rewardText = `💵 The merchant syndicate re-route! Recovered **${amt.toLocaleString()} Crow Coins**.`;
-        } 
-        else if (rollValue < 75) { 
-            const normalKeys = Object.keys(normalCards || {});
-            const mythicKeys = Object.keys(mythicCards || {});
-            const combinedKeys = [...new Set([...normalKeys, ...mythicKeys])];
-            const randomChar = combinedKeys[Math.floor(Math.random() * combinedKeys.length)] || "tanjiro";
-
-            if (Math.random() < 0.6) {
-                const rType = Math.random() < 0.25 ? "mythic" : "normal";
-                const itemId = `${randomChar}_${rType}_essence`;
-                p.materials.push(itemId);
-                
-                slotDisplay = "🧪 | 🧪 | 📦";
-                rewardTitle = "🧪 INVENTORY: WISTERIA FLUIDS 🧪";
-                rewardText = `Extracted custom **${randomChar.toUpperCase()} [${rType.toUpperCase()}] Wisteria Serum**! Ready for cell cultivation via \`/essence ${randomChar}\`.`;
-            } else {
-                const rType = Math.random() < 0.25 ? "mythic" : "normal";
-                const itemId = `${randomChar}_${rType}_blessing`;
-                p.materials.push(itemId);
-
-                slotDisplay = "⚔️ | ⚔️ | 📦";
-                rewardTitle = "⚔️ FORGE: UNBOUND NICHIRIN ORE ⚔️";
-                rewardText = `Hammered out a matching **${randomChar.toUpperCase()} [${rType.toUpperCase()}] Nichirin Ore** piece! Store block locked. Forge via \`/blessing ${randomChar}\`.`;
+        // Operational Processing Loop Block
+        for (let i = 0; i < rolls; i++) {
+            if (mode === "normal") {
+                if (Math.random() < 0.70) {
+                    const randomNorm = normalNames[Math.floor(Math.random() * normalNames.length)] || "Corps Recruit";
+                    p.inventory.push(randomNorm);
+                    lootEarned.push(`🃏 Card: ${randomNorm}`);
+                } else {
+                    const bonusCoins = Math.floor(Math.random() * 80) + 20;
+                    p.coins += bonusCoins;
+                    lootEarned.push(`🪙 Bonus: +${bonusCoins} Coins`);
+                }
+            } 
+            else if (mode === "character") {
+                const randChance = Math.random() * 100;
+                // High power character drop rates are heavily dampened (Ultra Low)
+                if (randChance < 3.0 && mythicObjects.length > 0) { 
+                    // Muzan / High Premium Tier (Top Index Asset)
+                    const muzan = mythicObjects.find(c => c.id.includes("muzan")) || mythicObjects[mythicObjects.length - 1];
+                    p.inventory.push(muzan.name);
+                    lootEarned.push(`🔥 [MYTHICAL ULTIMATE] ${muzan.name}`);
+                } else if (randChance < 15.0 && mythicObjects.length > 0) {
+                    const luckyMythic = mythicObjects[Math.floor(Math.random() * mythicObjects.length)];
+                    p.inventory.push(luckyMythic.name);
+                    lootEarned.push(`✨ [MYTHICAL LIMITED] ${luckyMythic.name}`);
+                } else {
+                    const normalFallback = normalNames[Math.floor(Math.random() * normalNames.length)] || "Elite Recruit";
+                    p.inventory.push(normalFallback);
+                    lootEarned.push(`🃏 Normal Card: ${normalFallback}`);
+                }
+            } 
+            else if (mode === "material") {
+                if (Math.random() < 0.15) {
+                    p.materials["universal_blessing"] = (p.materials["universal_blessing"] || 0) + 1;
+                    lootEarned.push("💎 Universal Blessing Ore Piece");
+                } else {
+                    const poolSample = mythicObjects.length > 0 ? mythicObjects.map(c => c.id.split('_')[0]) : ["tanjiro", "nezuko", "zenitsu"];
+                    const designatedChar = poolSample[Math.floor(Math.random() * poolSample.length)];
+                    const generatedEssence = `${designatedChar}_essence`;
+                    
+                    p.materials[generatedEssence] = (p.materials[generatedEssence] || 0) + 1;
+                    lootEarned.push(`🧪 Essence: ${generatedEssence.toUpperCase()}`);
+                }
             }
         }
-        else { 
-            slotDisplay = "💀 | ❌ | 🪵";
-            rewardTitle = "💥 METALLIC COLLAPSE 💥";
-            rewardText = "Slag carbon content too high! Bellows dropped cold ash parameters.";
-        }
 
         saveDB(db);
 
-        let finalLayout = `🎰 **🎰 NICHIRIN FORGE SLOTS 🎰**\n` +
+        const reportSummary = lootEarned.map(item => `• ${item}`).join('\n');
+        let finalOutput = `🎰 **FORGE DROP REPORT | PROCESS COMPLETION**\n` +
                           `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                          `🏮 [  ${slotDisplay}  ] 🏮\n` +
-                          `━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-                          `🔥 **🔴 FORGE REACTION:**\n` +
-                          `⚔️ **${rewardTitle}**\n` +
-                          `📝 *${rewardText}*\n\n` +
+                          `🎁 **EXTRACTED REWARDS (${rolls}x Processing):**\n${reportSummary}\n` +
                           `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-                          `🏦 **UPDATED SACK STORAGE:**\n` +
-                          `• 🪙 Coins: \`${p.coins.toLocaleString()}\`\n` +
-                          `• 💎 Crystals: \`${Number(p.crystals).toLocaleString()}\`\n` +
-                          `• ✨ Tokens: \`${Number(p.mythic).toLocaleString()}\``;
+                          `🏦 **REMAINING RESERVES:**\n` +
+                          `• Coins: \`${p.coins.toLocaleString()}\` | Crystals: \`${p.crystals}\` | Tokens: \`${p.mythic}\``;
 
-        await bot.editMessageText(finalLayout, {
+        await bot.editMessageText(finalOutput, {
             chat_id: chatId,
-            message_id: rollingMsg.message_id,
+            message_id: processingMsg.message_id,
             parse_mode: "Markdown"
         }).catch(() => {});
     });
 
     // ==========================================
-    // 💼 5. /work (TRAINING PATROL & CROW REWARD)
+    // 🧪 5. /use (INTELLIGENT SELECTION ARCHETYPE)
+    // ==========================================
+    bot.onText(/\/use\s*(.+)/, (msg, match) => {
+        const chatId = msg.chat.id;
+        const userId = msg.from.id.toString();
+        let db = ensureUser(userId);
+        const itemRequested = match[1].trim().toLowerCase();
+
+        if (!db[userId].materials[itemRequested] || db[userId].materials[itemRequested] < 1) {
+            return bot.sendMessage(chatId, `❌ **Vault Discrepancy!** You don't possess any units of \`${itemRequested}\` inside storage blueprints.`);
+        }
+
+        if (!itemRequested.endsWith('_essence')) {
+            return bot.sendMessage(chatId, "❌ **Execution Halted:** `/use` pipeline accepts character-specific essences only!");
+        }
+
+        const characterReference = itemRequested.split('_')[0]; // Extracted character clean handle
+
+        // Instantiating Dynamic Multi-Option Routing Switch Matrix
+        const interfaceOptions = {
+            reply_markup: JSON.stringify({
+                inline_keyboard: [
+                    [
+                        { text: "🟢 Normal Form Upgrade", callback_data: `use_essence:${characterReference}:${itemRequested}:normal` },
+                        { text: "🔴 Mythical Form Upgrade", callback_data: `use_essence:${characterReference}:${itemRequested}:mythical` }
+                    ]
+                ]
+            }),
+            parse_mode: "Markdown"
+        };
+
+        bot.sendMessage(chatId, `🧪 **ESSENCE EXTRACTION DEPLOYMENT ENGINE**\n━━━━━━━━━━━━━━━━━━━━━━━━━━\nDetected: \`${itemRequested.toUpperCase()}\` blueprint item.\n\nChoose target matrix formulation platform below:`, interfaceOptions);
+    });
+
+    // Inline Button Processing Callbacks Matrix Interceptor
+    bot.on("callback_query", async (query) => {
+        const dataPayload = query.data;
+        if (!dataPayload.startsWith("use_essence:")) return;
+
+        const [_, charRef, targetEssence, chosenTier] = dataPayload.split(":");
+        const userId = query.from.id.toString();
+        const chatId = query.message.chat.id;
+
+        let db = getDB();
+        let p = db[userId];
+
+        if (!p || !p.materials[targetEssence] || p.materials[targetEssence] < 1) {
+            return bot.answerCallbackQuery(query.id, { text: "Bhai, item nahi mil raha vault mein!", show_alert: true });
+        }
+
+        // Locate appropriate representation match within storage logs
+        let ownedInventoryIndex = p.inventory.findIndex(item => item.toLowerCase().includes(charRef));
+        
+        if (ownedInventoryIndex === -1) {
+            return bot.answerCallbackQuery(query.id, { text: `Bhai, pehle ${charRef.toUpperCase()} ka card acquire karo inventory mein!`, show_alert: true });
+        }
+
+        // Deduct operational serum item currency
+        p.materials[targetEssence] -= 1;
+        if (p.materials[targetEssence] === 0) delete p.materials[targetEssence];
+
+        // Core Balance Scaling Configurations Formulation
+        let gainedXp = chosenTier === "mythical" ? 50 : 100; // Premium 5x harder grind matrix dampening
+        let gainedPower = chosenTier === "mythical" ? 150 : 50;
+        let boundaryXpCap = chosenTier === "mythical" ? 500 : 100;
+
+        // Custom individual tracking parameter injection checks inside item block properties
+        if (typeof p.inventory[ownedInventoryIndex] === "string") {
+            p.inventory[ownedInventoryIndex] = {
+                name: p.inventory[ownedInventoryIndex],
+                level: 1,
+                xp: 0,
+                power: chosenTier === "mythical" ? 7000 : 1200
+            };
+        }
+
+        let card = p.inventory[ownedInventoryIndex];
+        card.xp += gainedXp;
+        card.power += gainedPower;
+
+        let leveledUp = false;
+        if (card.xp >= boundaryXpCap) {
+            card.xp -= boundaryXpCap;
+            card.level += 1;
+            card.power += chosenTier === "mythical" ? 300 : 75; // Extra Milestone boost values allocation
+            leveledUp = true;
+        }
+
+        saveDB(db);
+        await bot.answerCallbackQuery(query.id, { text: "Cultivation sequence processed successfully!" });
+
+        let reportMessage = `🧪 **ESSENCE PROCESSING SEQUENCE COMPLETION**\n` +
+                            `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                            `✅ Target item consumed: \`${targetEssence.toUpperCase()}\`\n` +
+                            `🎯 Target profile type: \`${chosenTier.toUpperCase()} Format\`\n\n` +
+                            `📈 **STATISTICAL MODIFICATIONS ADJUSTMENT:**\n` +
+                            `• Raw Combat Power: \`+${gainedPower}\` *(Total: ${card.power})*\n` +
+                            `• Synthesized Base XP: \`+${gainedXp}\` *(${card.xp}/${boundaryXpCap})*\n`;
+
+        if (leveledUp) {
+            reportMessage += `\n🎉 **ASCENSION DETECTED!** Card advanced smoothly up to **Level ${card.level}**!`;
+        }
+        reportMessage += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+        bot.editMessageText(reportMessage, {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            parse_mode: "Markdown"
+        }).catch(() => {});
+    });
+
+    // ==========================================
+    // 💼 6. /work
     // ==========================================
     bot.onText(/\/work/, (msg) => {
         const userId = msg.from.id.toString();
