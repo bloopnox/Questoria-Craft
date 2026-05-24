@@ -1,4 +1,4 @@
-console.log("✅ RPG HELP CENTER FILE LOADED");
+console.log("✅ RPG HELP CENTER FILE LOADED (VELIX OS V2.5 INTEGRATION)");
 
 module.exports = (bot) => {
 
@@ -30,7 +30,7 @@ module.exports = (bot) => {
             { text: "⚔️ Battle System", callback_data: "help_battle" }
           ],
           [
-            { text: "📘 Guide", callback_data: "help_guide" },
+            { text: "📘 Guide & Tasks", callback_data: "help_guide" },
             { text: "🏆 Leaderboard", callback_data: "help_lb" }
           ],
           [
@@ -66,35 +66,45 @@ module.exports = (bot) => {
     }
 
     if (data === "help_economy") {
-      text = `💰 **ECONOMY SYSTEM**
+      text = `💰 **ECONOMY & CONVERTER SYSTEM**
 
-• \`/balance\` → Check wallet coins
-• \`/daily\` → Claim free tokens/coins
-• \`/work\` → Hunt for cash resources
-• \`/deposit <amount>\` → Move coins to personal bank account`;
+• \`/balance\` / \`/bal\` → Check Coins, Crystals, and Mythic Tokens
+• \`/work\` → Work hard for cash resources & progress tasks
+• \`/spin\` → Lucky Draw (Cost: 1200 Coins or 5 Mythic Tokens)
+• \`/dep <amount/all>\` → Shift cash into your bank vault
+• \`/with <amount/all>\` → Withdraw cash back to wallet
+
+🔄 **CONVERTER ENGINE**
+• \`/convert c2cr <amount>\` → 100 Coins ➡️ 1 Crystal
+• \`/convert cr2mt <amount>\` → 100 Crystals ➡️ 1 Mythic Token`;
     }
 
     if (data === "help_profile") {
       text = `👤 **PROFILE SYSTEM**
 
-• \`/profile\` → View stats, live XP, rank & character card
+• \`/profile\` → View stats, live XP, level, rank & character card
 • \`/inventory\` → Inspect your collection items
 • \`/char\` → Lists all available database cards
-• \`/char <name/id>\` → Search characters with [⭐ Normal]/[🔥 MYTHICAL] separation
+• \`/char <name/id>\` → Search characters with separation
 • \`/equip\` → Equip weapons & accessories`;
     }
 
     if (data === "help_battle") {
       text = `⚔️ **BATTLE SYSTEM**
 
-• \`/battle\` → Spawn random rank demons & battle for Coins/XP
-• \`/summon\` → Use Mythical Crystals to pull characters`;
+• \`/battle\` → Fight fierce battles for Coins/XP & update tasks
+• \`/hunt\` → Hunt down rogue targets for progression
+
+🛠️ **ADMIN CONTROLS**
+• \`/battle_toggle\` → Enable/Disable battle commands in the group`;
     }
 
     if (data === "help_guide") {
-      text = `📘 **GUIDE**
+      text = `📋 **GUIDE & MISSIONS**
 
-• \`/guide\` → Open full visual interactive user guide panels`;
+• \`/task\` → View personalized daily mission progress
+• \`/guide\` → Open full visual interactive user guide panels
+• *Complete daily tasks to unlock 20 Mythic Tokens & 50 XP!*`;
     }
 
     if (data === "help_lb") {
