@@ -2,14 +2,11 @@
 // ⚔️ AUTOMATED CORPS BATTLE SYSTEM | VELIX OS V2.5
 // ==========================================================
 
-const BATTLE_IMAGE = "https://i.pinimg.com/736x/52/f5/97/52f597b5ed03c1f59f54aa656be46c7d.jpg";
+const fs = require("fs");
+const path = require("path");
 
-const demonPool = [
-    { name: "Hand Demon", hp: 300, attack: 25, rewardCoins: 120, rewardTokens: 0 },
-    { name: "Rui (Lower Moon 5)", hp: 600, attack: 45, rewardCoins: 300, rewardTokens: 5 },
-    { name: "Akaza (Upper Moon 3)", hp: 1500, attack: 85, rewardCoins: 800, rewardTokens: 25 },
-    { name: "Kokushibo (Upper Moon 1)", hp: 2500, attack: 120, rewardCoins: 1500, rewardTokens: 50 }
-];
+// Demon data connect kiya assets folder se
+const demonData = require(path.join(process.cwd(), "assets", "demon.js"));
 
 const activeBattles = new Map();
 
@@ -20,7 +17,7 @@ module.exports = (bot) => {
         const userId = msg.from.id.toString();
 
         if (!global.economyDB) {
-            return bot.sendMessage(chatId, "🚨 **System Error:** Engine core not detected.");
+            return bot.sendMessage(chatId, "🚨 **System Error:** Economy Engine not detected.");
         }
 
         let db = global.economyDB.getDB();
@@ -30,7 +27,8 @@ module.exports = (bot) => {
             return bot.sendMessage(chatId, "⚔️ **Combat Lock!** Finish your current battle first.");
         }
 
-        const demon = { ...demonPool[Math.floor(Math.random() * demonPool.length)] };
+        // Demon data select kiya
+        const demon = demonData[Math.floor(Math.random() * demonData.length)];
         const session = {
             playerHp: 500, playerMaxHp: 500, playerAtk: 40,
             demonName: demon.name, demonHp: demon.hp, demonMaxHp: demon.hp, demonAtk: demon.attack,
@@ -39,7 +37,10 @@ module.exports = (bot) => {
 
         activeBattles.set(userId, session);
 
-        bot.sendPhoto(chatId, BATTLE_IMAGE, {
+        // Demon ki specific image bhej rahe hain
+        const imagePath = path.join(process.cwd(), demon.image);
+
+        bot.sendPhoto(chatId, imagePath, {
             caption: `👹 **DEMON ENCOUNTER | ${demon.name}**\n` +
                      `━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
                      `❤️ **Your HP:** \`500/500\` | ⚔️ **Atk:** \`40\`\n` +
