@@ -1,290 +1,144 @@
-// ==========================================
-// ⚔️ AUTOMATED CORPS BATTLE SYSTEM
-// ==========================================
+// commands/battle.js
 
-const demons = require("../assets/demon");
-
-// ==========================================
-// 👹 DEMON POOL
-// ==========================================
-
-const demonPool = [
-    {
-        name: "Hand Demon",
-        hp: 300,
-        attack: 25,
-        rewardCoins: 120,
-        rewardTokens: 0,
-        image: demons.handdemon
-    },
-    {
-        name: "Rui (Lower Moon 5)",
-        hp: 600,
-        attack: 45,
-        rewardCoins: 300,
-        rewardTokens: 5,
-        image: demons.rui
-    },
-    {
-        name: "Akaza (Upper Moon 3)",
-        hp: 1500,
-        attack: 85,
-        rewardCoins: 800,
-        rewardTokens: 25,
-        image: demons.akaza
-    },
-    {
-        name: "Kokushibo (Upper Moon 1)",
-        hp: 2500,
-        attack: 120,
-        rewardCoins: 1500,
-        rewardTokens: 50,
-        image: demons.kokushibo
-    }
-];
-
-// ==========================================
-// ⚔️ ACTIVE BATTLES
-// ==========================================
+const demons = require("../asset/demon");
 
 const activeBattles = new Map();
 
 module.exports = (bot) => {
 
-    // ==========================================
+    // =========================
     // ⚔️ START BATTLE
-    // ==========================================
+    // =========================
 
     bot.onText(/\/battle/, async (msg) => {
 
         const chatId = msg.chat.id;
         const userId = msg.from.id.toString();
 
-        if (!global.economyDB) {
-            return bot.sendMessage(chatId, "❌ Economy DB not found.");
-        }
-
-        let db = global.economyDB.getDB();
-
-        db[userId] = global.economyDB.sanitizeUserObject(db[userId]);
-
         if (activeBattles.has(userId)) {
-            return bot.sendMessage(chatId, "⚔️ You are already in battle!");
+            return bot.sendMessage(
+                chatId,
+                "⚔️ You are already in battle!"
+            );
         }
 
-        // Random demon
-        const demon = {
-            ...demonPool[Math.floor(Math.random() * demonPool.length)]
-        };
+        // Random Demon
+        const demon =
+            demons[Math.floor(Math.random() * demons.length)];
+
+        // Random rewards
+        const reward =
+            Math.floor(
+                Math.random() *
+                (demon.reward[1] - demon.reward[0] + 1)
+            ) + demon.reward[0];
+
+        const exp =
+            Math.floor(
+                Math.random() *
+                (demon.exp[1] - demon.exp[0] + 1)
+            ) + demon.exp[0];
 
         // Player stats
-        const playerHp = 500;
-        const playerAtk = 40;
-
         const session = {
-            playerHp,
-            playerMaxHp: playerHp,
-            playerAtk,
 
-            demonName: demon.name,
-            demonHp: demon.hp,
-            demonMaxHp: demon.hp,
-            demonAtk: demon.attack,
+            playerHp: 250,
+            playerMaxHp: 250,
+            playerAtk: 35,
 
-            rewardCoins: demon.rewardCoins,
-            rewardTokens: demon.rewardTokens,
+            demon,
 
-            image: demon.image
+            reward,
+            exp
         };
 
         activeBattles.set(userId, session);
 
-        const battleButtons = {
-            inline_keyboard: [
-                [
-                    {
-                        text: "⚔️ Attack",
-                        callback_data: `slay_attack:${userId}`
-                    },
-                    {
-                        text: "🛡️ Defend",
-                        callback_data: `slay_defend:${userId}`
-                    }
-                ],
-                [
-                    {
-                        text: "🏃 Flee",
-                        callback_data: `slay_flee:${userId}`
-                    }
-                ]
-            ]
-        };
+        // Send battle image
+        await bot.sendPhoto(
+            chatId,
+            demon.image,
+            {
+                caption:
+                    `👹 *${demon.name} Appeared!*\n\n` +
+                    `🏷 Rank: *${demon.rank}*\n` +
+                    `⚔️ Type: *${demon.type}*\n\n` +
 
-        await bot.sendPhoto(chatId, session.image, {
-            caption:
-                `👹 *DEMON ENCOUNTER*\n` +
-                `━━━━━━━━━━━━━━━━━━\n\n` +
-                `⚠️ A wild *${session.demonName}* appeared!\n\n` +
-                `❤️ Your HP: \`${session.playerHp}/${session.playerMaxHp}\`\n` +
-                `⚔️ Your ATK: \`${session.playerAtk}\`\n\n` +
-                `🖤 Demon HP: \`${session.demonHp}/${session.demonMaxHp}\`\n` +
-                `💢 Demon ATK: \`${session.demonAtk}\`\n\n` +
-                `Choose your move.`,
-            parse_mode: "Markdown",
-            reply_markup: battleButtons
-        });
+                    `❤️ Demon HP: *${demon.hp}*\n` +
+                    `⚔️ Demon Attack: *${demon.attack}*\n\n` +
+
+                    `🧍 Your HP: *${session.playerHp}*\n` +
+                    `⚔️ Your Attack: *${session.playerAtk}*\n\n` +
+
+                    `Choose your move.`,
+                parse_mode: "Markdown",
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "⚔️ Attack",
+                                callback_data: `battle_attack_${userId}`
+                            },
+                            {
+                                text: "🏃 Run",
+                                callback_data: `battle_run_${userId}`
+                            }
+                        ]
+                    ]
+                }
+            }
+        );
     });
 
-    // ==========================================
+    // =========================
     // 🎮 BUTTON SYSTEM
-    // ==========================================
+    // =========================
 
     bot.on("callback_query", async (query) => {
 
-        const chatId = query.message.chat.id;
-        const callerId = query.from.id.toString();
         const data = query.data;
 
         if (
-            !data.startsWith("slay_attack:") &&
-            !data.startsWith("slay_defend:") &&
-            !data.startsWith("slay_flee:")
+            !data.startsWith("battle_attack_") &&
+            !data.startsWith("battle_run_")
         ) return;
 
-        const targetId = data.split(":")[1];
+        const chatId = query.message.chat.id;
+        const userId = query.from.id.toString();
 
-        // Anti button steal
-        if (targetId !== callerId) {
+        const targetId = data.split("_")[2];
+
+        // Anti steal
+        if (targetId !== userId) {
+
             return bot.answerCallbackQuery(query.id, {
-                text: "❌ This is not your battle.",
+                text: "❌ This is not your battle!",
                 show_alert: true
             });
         }
 
-        const session = activeBattles.get(callerId);
+        const session = activeBattles.get(userId);
 
         if (!session) {
+
             return bot.answerCallbackQuery(query.id, {
-                text: "⚠️ Battle expired.",
+                text: "⚠️ Battle expired!",
                 show_alert: true
             });
         }
 
-        let log = "";
+        const demon = session.demon;
 
-        // ==========================================
-        // ⚔️ ATTACK
-        // ==========================================
+        // =========================
+        // 🏃 RUN
+        // =========================
 
-        if (data.startsWith("slay_attack:")) {
+        if (data.startsWith("battle_run_")) {
 
-            let playerDamage =
-                Math.floor(Math.random() * 20) + session.playerAtk;
-
-            session.demonHp -= playerDamage;
-
-            log += `⚔️ You dealt *${playerDamage}* damage!\n`;
-
-            // Demon dead
-            if (session.demonHp <= 0) {
-
-                activeBattles.delete(callerId);
-
-                let db = global.economyDB.getDB();
-
-                db[callerId] =
-                    global.economyDB.sanitizeUserObject(db[callerId]);
-
-                db[callerId].coins += session.rewardCoins;
-                db[callerId].mythic += session.rewardTokens;
-
-                global.economyDB.saveDB(db);
-
-                await bot.editMessageCaption(
-                    `🏆 *VICTORY!*\n` +
-                    `━━━━━━━━━━━━━━━━━━\n\n` +
-                    `You defeated *${session.demonName}*!\n\n` +
-                    `🪙 Coins Earned: *${session.rewardCoins}*\n` +
-                    `✨ Mythic Tokens: *${session.rewardTokens}*`,
-                    {
-                        chat_id: chatId,
-                        message_id: query.message.message_id,
-                        parse_mode: "Markdown"
-                    }
-                );
-
-                return bot.answerCallbackQuery(query.id);
-            }
-
-            // Demon attacks
-            let demonDamage =
-                Math.floor(Math.random() * 15) +
-                (session.demonAtk - 10);
-
-            demonDamage = Math.max(5, demonDamage);
-
-            session.playerHp -= demonDamage;
-
-            log += `👹 ${session.demonName} dealt *${demonDamage}* damage!\n`;
-        }
-
-        // ==========================================
-        // 🛡️ DEFEND
-        // ==========================================
-
-        if (data.startsWith("slay_defend:")) {
-
-            let heal = Math.floor(Math.random() * 15) + 10;
-
-            session.playerHp = Math.min(
-                session.playerMaxHp,
-                session.playerHp + heal
-            );
-
-            let demonDamage = Math.floor(Math.random() * 10) + 5;
-
-            session.playerHp -= demonDamage;
-
-            log += `🛡️ You defended and healed *${heal} HP*\n`;
-            log += `👹 Enemy dealt only *${demonDamage}* damage!\n`;
-        }
-
-        // ==========================================
-        // 🏃 FLEE
-        // ==========================================
-
-        if (data.startsWith("slay_flee:")) {
-
-            activeBattles.delete(callerId);
-
-            await bot.deleteMessage(
-                chatId,
-                query.message.message_id
-            ).catch(() => {});
-
-            bot.sendMessage(
-                chatId,
-                `🏃 You escaped from *${session.demonName}*!`,
-                {
-                    parse_mode: "Markdown"
-                }
-            );
-
-            return bot.answerCallbackQuery(query.id);
-        }
-
-        // ==========================================
-        // 💀 PLAYER DEAD
-        // ==========================================
-
-        if (session.playerHp <= 0) {
-
-            activeBattles.delete(callerId);
+            activeBattles.delete(userId);
 
             await bot.editMessageCaption(
-                `💀 *MISSION FAILED*\n` +
-                `━━━━━━━━━━━━━━━━━━\n\n` +
-                `You were defeated by *${session.demonName}*...`,
+                `🏃 You escaped from *${demon.name}*!`,
                 {
                     chat_id: chatId,
                     message_id: query.message.message_id,
@@ -295,43 +149,112 @@ module.exports = (bot) => {
             return bot.answerCallbackQuery(query.id);
         }
 
-        // ==========================================
-        // 🔄 UPDATE BATTLE
-        // ==========================================
+        // =========================
+        // ⚔️ ATTACK
+        // =========================
 
-        const updatedButtons = {
-            inline_keyboard: [
-                [
-                    {
-                        text: "⚔️ Attack",
-                        callback_data: `slay_attack:${callerId}`
-                    },
-                    {
-                        text: "🛡️ Defend",
-                        callback_data: `slay_defend:${callerId}`
-                    }
-                ],
-                [
-                    {
-                        text: "🏃 Flee",
-                        callback_data: `slay_flee:${callerId}`
-                    }
-                ]
-            ]
-        };
+        let playerDamage =
+            Math.floor(Math.random() * 20) +
+            session.playerAtk;
+
+        demon.hp -= playerDamage;
+
+        let log =
+            `⚔️ You dealt *${playerDamage}* damage!\n`;
+
+        // Demon dead
+        if (demon.hp <= 0) {
+
+            activeBattles.delete(userId);
+
+            // Economy save
+            if (global.economyDB) {
+
+                let db = global.economyDB.getDB();
+
+                db[userId] =
+                    global.economyDB.sanitizeUserObject(
+                        db[userId]
+                    );
+
+                db[userId].coins += session.reward;
+                db[userId].exp += session.exp;
+
+                global.economyDB.saveDB(db);
+            }
+
+            await bot.editMessageCaption(
+                `🏆 *Victory!*\n\n` +
+                `You defeated *${demon.name}*\n\n` +
+
+                `🪙 Coins Earned: *${session.reward}*\n` +
+                `⭐ EXP Earned: *${session.exp}*`,
+                {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: "Markdown"
+                }
+            );
+
+            return bot.answerCallbackQuery(query.id);
+        }
+
+        // Demon attack
+        let demonDamage =
+            Math.floor(Math.random() * 10) +
+            demon.attack;
+
+        session.playerHp -= demonDamage;
+
+        log +=
+            `👹 ${demon.name} dealt *${demonDamage}* damage!\n`;
+
+        // Player dead
+        if (session.playerHp <= 0) {
+
+            activeBattles.delete(userId);
+
+            await bot.editMessageCaption(
+                `💀 *You were defeated by ${demon.name}*`,
+                {
+                    chat_id: chatId,
+                    message_id: query.message.message_id,
+                    parse_mode: "Markdown"
+                }
+            );
+
+            return bot.answerCallbackQuery(query.id);
+        }
+
+        // =========================
+        // 🔄 UPDATE MESSAGE
+        // =========================
 
         await bot.editMessageCaption(
-            `⚔️ *BATTLE IN PROGRESS*\n` +
-            `━━━━━━━━━━━━━━━━━━\n\n` +
+            `👹 *${demon.name}*\n\n` +
+
             `${log}\n` +
-            `❤️ Your HP: \`${session.playerHp}/${session.playerMaxHp}\`\n` +
-            `🖤 ${session.demonName} HP: \`${session.demonHp}/${session.demonMaxHp}\`\n\n` +
-            `Choose your next move.`,
+
+            `❤️ Demon HP: *${demon.hp}*\n` +
+            `🧍 Your HP: *${session.playerHp}*`,
             {
                 chat_id: chatId,
                 message_id: query.message.message_id,
                 parse_mode: "Markdown",
-                reply_markup: updatedButtons
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "⚔️ Attack",
+                                callback_data: `battle_attack_${userId}`
+                            },
+                            {
+                                text: "🏃 Run",
+                                callback_data: `battle_run_${userId}`
+                            }
+                        ]
+                    ]
+                }
             }
         );
 
