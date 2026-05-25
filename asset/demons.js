@@ -1,4 +1,9 @@
-const demons = [
+/**
+ * VELIX OS V2.5 | CENTRAL ENEMY DEMON REGISTRY ASSETS
+ * Aligned Field Framework for Thread-Safe Combat Resolution Loops
+ */
+
+const demonArray = [
 
   // =========================
   // 🩸 NORMAL DEMONS
@@ -10,7 +15,7 @@ const demons = [
     rank: "Low",
     type: "Attacker",
     hp: 70,
-    attack: 12,
+    atk: 12, // Property standard format mapped perfectly across combat calculations
     defense: 5,
     speed: 10,
     reward: [120, 200],
@@ -26,7 +31,7 @@ const demons = [
     rank: "Low",
     type: "Stealth",
     hp: 80,
-    attack: 13,
+    atk: 13,
     defense: 6,
     speed: 14,
     reward: [120, 200],
@@ -42,7 +47,7 @@ const demons = [
     rank: "Low",
     type: "Speed",
     hp: 75,
-    attack: 14,
+    atk: 14,
     defense: 5,
     speed: 16,
     reward: [120, 200],
@@ -58,7 +63,7 @@ const demons = [
     rank: "Low",
     type: "Poison",
     hp: 90,
-    attack: 15,
+    atk: 15,
     defense: 7,
     speed: 12,
     reward: [120, 200],
@@ -74,7 +79,7 @@ const demons = [
     rank: "Low",
     type: "Control",
     hp: 95,
-    attack: 13,
+    atk: 13,
     defense: 8,
     speed: 11,
     reward: [120, 200],
@@ -90,7 +95,7 @@ const demons = [
     rank: "Low",
     type: "Tank",
     hp: 110,
-    attack: 16,
+    atk: 16,
     defense: 12,
     speed: 6,
     reward: [120, 200],
@@ -106,7 +111,7 @@ const demons = [
     rank: "Low",
     type: "Tank",
     hp: 110,
-    attack: 16,
+    atk: 16,
     defense: 12,
     speed: 6,
     reward: [120, 200],
@@ -126,7 +131,7 @@ const demons = [
     rank: "Strong",
     type: "Control",
     hp: 150,
-    attack: 22,
+    atk: 22,
     defense: 13,
     speed: 14,
     reward: [150, 300],
@@ -142,7 +147,7 @@ const demons = [
     rank: "Strong",
     type: "Attacker",
     hp: 140,
-    attack: 24,
+    atk: 24,
     defense: 12,
     speed: 15,
     reward: [150, 300],
@@ -158,7 +163,7 @@ const demons = [
     rank: "Strong",
     type: "Speed",
     hp: 135,
-    attack: 23,
+    atk: 23,
     defense: 11,
     speed: 20,
     reward: [150, 300],
@@ -167,7 +172,13 @@ const demons = [
     rarity: "Uncommon",
     image: "https://i.pinimg.com/736x/4c/cf/15/4ccf15ca730a2db1a3bbc1c93dbf6556.jpg"
   }
-
 ];
 
-module.exports = demons;
+// Compile dynamic lookup map to prevent system state crashing
+const demonMap = {};
+demonArray.forEach(demon => {
+  demonMap[demon.id] = demon;
+});
+
+// Double export block ensures compatibility with both standard loops and targeted references!
+module.exports = Object.assign(demonArray, demonMap);
