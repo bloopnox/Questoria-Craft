@@ -211,7 +211,6 @@ if (fs.existsSync(commandsPath)) {
 } else {
   console.log("❌ ERROR: 'commands' folder not found at path: " + commandsPath);
 }
-
 // =========================================
 // 📜 DEMON SLAYER UI SYSTEM COMMAND MENU
 // =========================================
@@ -222,4 +221,9 @@ bot.setMyCommands([
   { command: "daily", description: "🔸 Claim daily training resources" },
   { command: "work", description: "🪵 Execute survival work assignments" },
   { command: "guild", description: "🏮 Access Guild Alliance Chambers" },
-  { command: "battle", description: "👹 Engage dangerous Demon threats
+  { command: "battle", description: "👹 Engage dangerous Demon threats" }, // 👈 Fixed: Added closing quote and brace cleanly
+  { command: "summon", description: "🌌 Perform legendary breathing summon" },
+  { command: "profile", description: "👤 View your Slayer Identity Status" },
+  { command: "upgrade", description: "⚡ Awaken cards using special essence" },
+  { command: "premium", description: "👑 Enter the God-Tier Premium Shop" }
+]).catch(err => console.log("❌ Navigation Grid Error:", err.message));
