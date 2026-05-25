@@ -1,82 +1,105 @@
 /**
- * VELIX OS V2.5 | CENTRAL STORAGE & INVENTORY MATRIX
- * Fully Synchronized with Centralized Ledger & Forge Materials Ledger
- * Multi-Thread Safe Array Mapper for Slayers & Essences
+ * VELIX OS V2.5 | CENTRAL MYTHICAL FACTION EXCHANGE SHOP
+ * Fully Synchronized with Centralized Ledger & Card Inventories
+ * Thread-Safe State Handler with Isolated Callback Query Triggers
  */
 
-console.log("晶 [LOADED SUCCESS] Inventory Grid Database Core Linked: inventory.js");
+const mythical = require("../asset/mythical");
+
+console.log("🏪 [LOADED SUCCESS] Mythical Card Exchange Matrix Linked: mythicalshop.js");
 
 module.exports = (bot) => {
-  bot.onText(/\/inventory/, async (msg) => {
+
+  // ==========================================
+  // 🏪 /mythicalshop - ALLIANCE CARD VISUALIZER
+  // ==========================================
+  bot.onText(/^\/mythicalshop$/, async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id.toString();
 
-    // Pulling unified user data from centralized system engine hook
+    // Pulling profile layers from the unified ledger hook
     const player = bot.getPlayerData ? bot.getPlayerData(userId) : null;
     if (!player) return;
 
-    // Safety checks for inventory and material objects structure fallback
-    if (!player.inventory || !Array.isArray(player.inventory)) player.inventory = [];
-    if (!player.materials) player.materials = {};
+    // Syncing with existing schema naming patterns
+    const crystals = player.mythicalCrystals || 0;
 
-    try {
-      // 1. Compile Slayers/Squad Grid Section
-      let slayerListText = "";
-      if (player.inventory.length === 0) {
-        slayerListText = "   *No active squad members found inside your grid. Deploy tokens via /summon.*\n";
-      } else {
-        player.inventory.forEach((item, index) => {
-          let name = "";
-          let level = 1;
+    let shopLayoutText = `💎 **VELIX OS | MYTHICAL ALLIANCE SHOP** 💎\n` +
+                         `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                         `💠 **Your Core Reserves:** \`${crystals}\` Mythic Crystals\n\n` +
+                         ` available mythical elite ranks to add to your division:\n\n`;
 
-          if (typeof item === "string") {
-            name = item;
-            level = 1;
-          } else {
-            name = item.name || "Unknown Slayer";
-            level = parseInt(item.level, 10) || 1;
+    mythical.forEach((card, index) => {
+      shopLayoutText += `⚡ **${index + 1}. ${card.name}**\n` +
+                        `   └ 🔱 CP Output: \`${(card.power || 0).toLocaleString()}\`\n` +
+                        `   └ 💠 Price Target: \`${card.cost}\` Crystals\n` +
+                        `   └ 🆔 Identifier: \`${card.id}\`\n\n`;
+    });
+
+    shopLayoutText += `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                      `💡 *Click the grid interaction keys below to view core statistics.*`;
+
+    // Dispatching visual workspace interface matrix
+    bot.sendMessage(chatId, shopLayoutText, {
+      parse_mode: "Markdown",
+      reply_markup: {
+        inline_keyboard: mythical.map((card) => [
+          {
+            text: `👁‍🗨 View Framework: ${card.name}`,
+            callback_data: `view_${card.id}_${userId}` // Attached userId to enforce action perimeter lock
           }
+        ])
+      }
+    }).catch(e => console.error("Error sending mythical shop grid:", e.message));
+  });
 
-          // Dynamic Rank Emotes based on level thresholds
-          let rankStars = "⭐".repeat(level);
-          slayerListText += `   \`[${index + 1}]\` **${name}**\n   └ 📊 Rank: Level \`${level}/5\` ${rankStars}\n\n`;
+  // ==========================================
+  // 🔘 INTERACTIVE MATRIX CELL PROCESSING (VIEW ACTION)
+  // ==========================================
+  bot.on("callback_query", async (query) => {
+    const chatId = query.message.chat.id;
+    const messageId = query.message.message_id;
+    const data = query.data;
+    const clickerId = query.from.id.toString();
+
+    if (data.startsWith("view_")) {
+      const parts = data.split("_");
+      const cardId = parts[1];
+      const authorizedUserId = parts[2];
+
+      // Security check: Action lock out for foreign grid components
+      if (clickerId !== authorizedUserId) {
+        return bot.answerCallbackQuery(query.id, {
+          text: "❌ Operational Violation: This transaction terminal interface isn't routed to your grid network.",
+          show_alert: true
         });
       }
 
-      // 2. Compile Materials/Essence Storage Section
-      let materialsText = "";
-      const materialKeys = Object.keys(player.materials).filter(key => player.materials[key] > 0);
+      const card = mythical.find((c) => c.id === cardId);
+      if (!card) {
+        return bot.answerCallbackQuery(query.id, { text: "❌ Frame Data could not be mapped inside internal schemas." });
+      }
 
-      if (materialKeys.length === 0) {
-        materialsText = "   *Your material sub-ledger channels are currently vacant.*\n";
+      bot.answerCallbackQuery(query.id);
+
+      const frameCaps = `🎴 **VELIX OS CARD BLUEPRINT**\n` +
+                        `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                        `📛 **Designation:** \`${card.name}\`\n` +
+                        `⚔️ **Inherent Power:** \`${(card.power || 0).toLocaleString()} CP\`\n` +
+                        `💠 **Acquisition Cost:** \`${card.cost}\` Mythic Crystals\n` +
+                        `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                        `💡 *To buy this character entity, use standard forge execution.*`;
+
+      // Dispatching technical layout photo card
+      if (card.image) {
+        bot.sendPhoto(chatId, card.image, {
+          caption: frameCaps,
+          parse_mode: "Markdown"
+        }).catch(err => console.error("Error sending card rendering:", err.message));
       } else {
-        materialKeys.forEach(key => {
-          const count = player.materials[key] || 0;
-          let cleanName = key.replace(/_/g, " ").toUpperCase();
-          materialsText += `   🧪 **${cleanName}:** \`${count}\` Units\n`;
-        });
+        bot.sendMessage(chatId, frameCaps, { parse_mode: "Markdown" });
       }
-
-      // 3. Assemble Premium Cybernetic Dashboard View
-      const dashboardText = 
-        `🎒 **VELIX OS | CENTRAL STORAGE INVENTORY**\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `👤 **Slayer Identifier:** \`${msg.from.first_name}\`\n\n` +
-        `⚔️ **ACTIVE FACTION SQUAD GRID:**\n` +
-        `───────────────────────────\n` +
-        slayerListText +
-        `🧪 **FORGE CATALYSTS & MATERIALS:**\n` +
-        `───────────────────────────\n` +
-        materialsText +
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `💡 *To transcend your warriors to peak ranks, execute: \`/upgrade <name>\`*`;
-
-      // Dispatch Transmission
-      await bot.sendMessage(chatId, dashboardText, { parse_mode: "Markdown" });
-
-    } catch (err) {
-      console.error("❌ Critical inventory rendering glitch:", err.message);
-      bot.sendMessage(chatId, "❌ **System Error:** Failed to decode local storage matrix grid. Contact operator.");
     }
   });
+
 };
