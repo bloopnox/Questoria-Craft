@@ -202,7 +202,7 @@ const mythical = [
     power: 9000,
     cost: 10000,
     type: "mythical",
-    image: "https://i.pinimg.com/736x/4a/3b/a8/4a3ba8b84645185055a4469e85c62173.jpg",
+    image: "https://i.pinimg.com/1200x/b8/29/75/b82975fe07ee4976c50dbb91331ca590.jpg",
     level: 1,
     xp: 0,
     max_xp: 500,
