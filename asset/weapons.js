@@ -1,4 +1,9 @@
-const weapons = [
+/**
+ * VELIX OS V2.5 | CENTRAL WEAPON ARSENAL REGISTRY
+ * Fully Optimized for Static Item Shop Loops & Dynamic Inventory Equip Actions
+ */
+
+const weaponArray = [
   // ==========================================
   // 🟢 COMMON NICHIRIN BLADES
   // ==========================================
@@ -124,4 +129,15 @@ const weapons = [
   }
 ];
 
-module.exports = { weapons };
+// Automatically maps weapon assets into a direct key lookup dictionary
+const weaponsMap = {};
+weaponArray.forEach(item => {
+  weaponsMap[item.id] = item;
+});
+
+// Dynamic multi-export structure keeping your original destructuring code safe!
+module.exports = {
+  weapons: weaponArray, // Directly targets your legacy code destructuring { weapons }
+  weaponsMap: weaponsMap, // For high-speed index references during equipment switches
+  weaponArray: weaponArray
+};
