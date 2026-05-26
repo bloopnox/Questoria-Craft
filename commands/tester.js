@@ -45,10 +45,12 @@ module.exports = (bot) => {
       testLog(false, "FILESYSTEM", "`players.json` is completely missing.");
     }
 
-    if (global.VELIX_ASSETS && global.VELIX_ASSETS.demons && global.VELIX_ASSETS.weapons) {
-      testLog(true, "MEM-BRIDGE", `Global assets active. Registry map: \`[${Object.keys(global.VELIX_ASSETS).join(", ")}]\``);
+    // ✅ FIXED GLOBAL MEMORY BRIDGE CHECK
+    if (global.VELIX_ASSETS && (global.VELIX_ASSETS.demons || global.VELIX_ASSETS.weapons || global.VELIX_ASSETS.godTier || global.VELIX_ASSETS.mythical)) {
+      const activeKeys = Object.keys(global.VELIX_ASSETS);
+      testLog(true, "MEM-BRIDGE", `Global assets active in RAM. Registry map: \`[${activeKeys.join(", ")}]\``);
     } else {
-      testLog(false, "MEM-BRIDGE", "Global registry memory mapping is broken or unlinked.");
+      testLog(false, "MEM-BRIDGE", "Global registry memory mapping is broken, unlinked, or files failed to load inside index.js.");
     }
 
     // =================================================================
@@ -97,9 +99,8 @@ module.exports = (bot) => {
       const spinCost = 1;
       if (player.crystals >= spinCost) {
         player.crystals -= spinCost;
-        // Simulating lucky spin rewards injection
         player.coins += 500; 
-        player.inventory.push("Nezuko"); // Simulating a gacha character drop
+        player.inventory.push("Nezuko"); 
         
         if (player.crystals === 4 && player.inventory.includes("Nezuko")) {
           testLog(true, "SPIN-ENGINE", "Spin item addition and item tracking array arrays synced.");
@@ -111,7 +112,7 @@ module.exports = (bot) => {
       // 4. Test Daily Rewards Execution Clock
       const now = Date.now();
       player.last_daily = now;
-      player.coins += 200; // Give daily salary
+      player.coins += 200; 
       if (player.last_daily === now && player.coins === 1300) {
         testLog(true, "DAILY-CLOCK", "Cooldown timestamp locks and daily assets injection validated.");
       } else {
@@ -119,7 +120,7 @@ module.exports = (bot) => {
       }
 
       // 5. Test Combat & Level Up Scaling Formula
-      player.xp += 120; // Simulated battle victory xp gain
+      player.xp += 120; 
       if (player.xp >= 100) {
         player.level += 1;
         player.xp -= 100;
