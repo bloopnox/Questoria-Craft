@@ -1,51 +1,44 @@
 require("dotenv").config();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Groq = require("groq-sdk");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// =========================
+// 🤖 GROQ AI CLIENT
+// =========================
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
-let model;
-
-async function initModel() {
+// =========================
+// ⚡ JARVIS AI FUNCTION
+// =========================
+async function askJarvis(prompt, userId = null) {
   try {
-    const res = await genAI.listModels();
-    console.log("AVAILABLE MODELS:", res);
+    if (!prompt) return "⚠️ No input received.";
 
-    // pick first working model automatically
-    const first = res.models?.find(m =>
-      m.name.includes("gemini") &&
-      m.supportedGenerationMethods?.includes("generateContent")
-    );
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Jarvis, a smart AI assistant inside a Demon Slayer RPG Telegram bot. Keep replies short, natural, slightly cool, and helpful. Do not give long essays.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 250,
+    });
 
-    if (!first) {
-      throw new Error("No usable Gemini model found for this API key");
-    }
-
-    model = genAI.getGenerativeModel({ model: first.name });
-    console.log("✅ USING MODEL:", first.name);
+    return completion.choices[0].message.content;
 
   } catch (err) {
-    console.log("INIT ERROR:", err);
+    console.log("🔥 JARVIS ERROR:", err.message);
+
+    return "⚠️ Jarvis is currently offline. Try again later.";
   }
 }
-
-async function askJarvis(prompt) {
-  try {
-    if (!model) {
-      return "⚠️ AI not initialized yet.";
-    }
-
-    const result = await model.generateContent(
-      `You are Jarvis inside a Demon Slayer Telegram bot. Reply short and helpful.\nUser: ${prompt}`
-    );
-
-    return result.response.text();
-
-  } catch (err) {
-    console.log("JARVIS ERROR:", err.message);
-    return "⚠️ Jarvis is currently offline.";
-  }
-}
-
-initModel();
 
 module.exports = askJarvis;
