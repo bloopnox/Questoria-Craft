@@ -7,6 +7,7 @@ console.log("=========================================");
 const TelegramBot = require("node-telegram-bot-api");
 const fs = require("fs");
 const path = require("path");
+const askJarvis = require("./core/aiEngine");
 
 // =========================================
 // 🌐 SAFE TOKEN VALIDATION GATEWAY
@@ -180,6 +181,46 @@ bot.onText(/\/checkdb/, (msg) => {
       `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
       `✅ *Database status functional and fully linked to core engine.*`;
     bot.sendMessage(chatId, layout, { parse_mode: "Markdown" });
+  }
+});
+
+// =========================================
+// ⚡ JARVIS AI SYSTEM
+// =========================================
+bot.on("message", async (msg) => {
+
+  if (!msg.text) return;
+
+  const text = msg.text.toLowerCase();
+
+  // Ignore commands
+  if (text.startsWith("/")) return;
+
+  // Trigger word
+  if (text.startsWith("jarvis ")) {
+
+    const prompt = msg.text.slice(7);
+
+    try {
+
+      bot.sendChatAction(msg.chat.id, "typing");
+
+      const reply = await askJarvis(prompt);
+
+      bot.sendMessage(
+        msg.chat.id,
+        `⚡ JARVIS\n━━━━━━━━━━━━━━━\n${reply}`
+      );
+
+    } catch (err) {
+
+      console.log("JARVIS MESSAGE ERROR:", err.message);
+
+      bot.sendMessage(
+        msg.chat.id,
+        "⚠️ Jarvis system encountered an error."
+      );
+    }
   }
 });
 
